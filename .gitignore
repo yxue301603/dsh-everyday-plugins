@@ -1,0 +1,8 @@
+node_modules/
+.cache/
+artifacts/
+test-results/
+playwright-report/
+*.tgz
+Thumbs.db
+.DS_Store
