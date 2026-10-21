@@ -42,5 +42,15 @@
 
 桌面本地交付使用同一批已验证的七个独立安装包，并核验版本 **0.1.0**、启用清单和客户端哈希。已有快捷指令 **0.1.3** 的代码与依赖来源、原有依赖和个人 `cordis.patch.yml` 均保持完整。安装前备份包配置及锁文件；没有重启正在使用的应用。新增入口需要按宿主提示重载，或方便时完全退出托盘并重新打开。报告：`artifacts/local-install-results.json`。
 
-公开 GitHub 仓库和自动检查结果在发布步骤完成后记录。
+总仓库和七个新增独立仓库均已公开，已有快捷指令独立仓库保持不变。八个新仓库的首次实现检查均通过；总仓库的 [GitHub Actions 记录](https://github.com/yxue301603/dsh-everyday-plugins/actions/runs/39585938987) 对应实现提交 `ff941d8b05c021ea8cacff2109e7770eed8c7837`，七个独立仓库各有自己的构建、模型检查与打包流程。后续状态可在相应仓库 Actions 中查看。
+
+另用真实 DSH 安装器，从 **GitHub 来源**分别安装了总仓库及对话目录独立仓库；使用新的隔离 profile，均一次成功，版本、启用清单及已安装客户端 SHA256 与冻结构建一致。总包的 `private: true` 仅防止误发 npm，不影响 GitHub 安装。报告分别为 `artifacts/github-suite-install-result.json` 与 `artifacts/github-install-result.json`。其余六个新独立插件均已通过原生 tarball 安装和各自的公开 CI；没有将这些结果写成七个 GitHub 地址逐个安装的测试。
+
+已验证的总包客户端 SHA256：
+
+```text
+f60e72b9b23e6ea2c19350a8258987a12768c038adf77802405477858d5d808a
+```
+
+所有脚本、公开截图、文档和构建产物已提交；工作机完整运行报告留在忽略提交的 `artifacts/`，配置备份位于忽略提交的 `.cache/`。源码和预构建文件不包含个人会话、凭据或这些目录。
 

@@ -6,6 +6,8 @@
 
 [English](README.en.md) · [安装与升级](docs/INSTALLATION.md) · [开发计划](docs/PLAN.md) · MIT
 
+[![自动检查](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
+
 ## 选你用得上的
 
 | 插件与独立仓库 | 什么时候有用 | 使用入口 |
@@ -66,7 +68,7 @@ GitHub 安装需要能够访问 GitHub；DSH 中的 npm 镜像选择不会代理
 - **提醒需要客户端保持运行和连接。** 只监听启用后的实时变化，不补发旧历史。缺少明确结束原因时显示「已结束，请查看结果」，不推断成功；待确认依赖宿主提供的当前交互状态。关闭 DSH 后无法继续通知。
 - **选文来自已显示的单条消息。** 不支持跨多条消息的混合选区；原消息被卸载后可能无法定位，已经捕获的引用仍可手动使用。
 
-详细限制与存储上限见各独立插件 README。验证进度会记录在 [验证说明](docs/VERIFICATION.md)，未完成的项目见 [开发计划](docs/PLAN.md)。
+详细限制与存储上限见各独立插件 README。集中验证已通过 38 项模型检查、17 项浏览器场景及 12 项真实 DSH 功能检查；深浅色与原生安装结果见 [验证说明](docs/VERIFICATION.md)。
 
 ## 仓库结构
 

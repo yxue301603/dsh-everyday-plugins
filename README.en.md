@@ -6,6 +6,8 @@ Eight native DeepSeek Harness plugins for common prompts, long conversations, dr
 
 [中文](README.md) · [Installation and updates](docs/INSTALLATION.md) · [Development plan](docs/PLAN.md) · MIT
 
+[![Checks](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
+
 ## Pick what helps
 
 | Plugin and standalone repository | Everyday use | Where to open it |
@@ -66,7 +68,7 @@ System notifications are off until explicitly enabled and permission is granted.
 - **Alerts need a running, connected client.** Only new live changes are observed. No historical backlog is replayed. Without an explicit end reason, an alert says “Ended; review result” instead of assuming success. Attention notices depend on current host interaction state. Quitting DSH stops notifications.
 - **Selections come from one rendered message.** Mixed selections across several messages are unsupported. The source can become unavailable after unloading, while an already captured quotation remains usable.
 
-See each standalone README for exact limits. Verification progress belongs in [verification notes](docs/VERIFICATION.md); unfinished work is tracked in the [development plan](docs/PLAN.md).
+See each standalone README for exact limits. Verification passed 38 model checks, 17 browser scenarios and 12 real DSH functionality checks. Theme, installation results and test boundaries are documented in the [verification notes](docs/VERIFICATION.md).
 
 ## Source layout
 
