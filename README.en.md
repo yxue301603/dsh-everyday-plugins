@@ -10,16 +10,16 @@ Eight native DeepSeek Harness plugins for common prompts, long conversations, dr
 
 ## Pick what helps
 
-| Plugin and standalone repository | Everyday use | Where to open it |
+| Plugin directory | Everyday use | Where to open it |
 | --- | --- | --- |
-| [Quick prompts](https://github.com/yxue301603/dsh-quick-prompts) | Insert reusable instructions; customize, pin, categorize, fill template variables and find recent prompts | Quick prompts beside the composer, or pinned prompt buttons |
-| [Conversation outline](https://github.com/yxue301603/dsh-conversation-outline) | Search your earlier questions, return to context and resume reading | Chat outline beside the composer |
-| [Draft history](https://github.com/yxue301603/dsh-draft-history) | Preview and recover earlier drafts after an accidental clear or unwanted edit | Draft history beside the composer |
-| [Answer library](https://github.com/yxue301603/dsh-answer-library) | Save answers and excerpts, add tags, search, copy or insert them later | `☆` below an answer, or Answer library beside the composer |
-| [Turn files](https://github.com/yxue301603/dsh-turn-files) | Find delivered and recorded changed files by turn; copy paths, preview or reveal them | Turn files beside the composer |
-| [Task alerts](https://github.com/yxue301603/dsh-task-alerts) | Review completion, attention and failure notices; optionally enable background notifications | Task alerts beside the composer and its unread badge |
-| [Project notes](https://github.com/yxue301603/dsh-project-notes) | Keep requirements, errors, ideas and a small checklist for each workspace | Project notes beside the composer |
-| [Selection actions](https://github.com/yxue301603/dsh-selection-actions) | Quote a passage and prepare a follow-up question, translation or explanation | Ask about selection beside selected message text, or the composer toolbar |
+| [Quick prompts](packages/dsh-quick-prompts) | Insert reusable instructions; customize, pin, categorize, fill template variables and find recent prompts | Quick prompts beside the composer, or pinned prompt buttons |
+| [Conversation outline](packages/dsh-conversation-outline) | Search your earlier questions, return to context and resume reading | Chat outline beside the composer |
+| [Draft history](packages/dsh-draft-history) | Preview and recover earlier drafts after an accidental clear or unwanted edit | Draft history beside the composer |
+| [Answer library](packages/dsh-answer-library) | Save answers and excerpts, add tags, search, copy or insert them later | `☆` below an answer, or Answer library beside the composer |
+| [Turn files](packages/dsh-turn-files) | Find delivered and recorded changed files by turn; copy paths, preview or reveal them | Turn files beside the composer |
+| [Task alerts](packages/dsh-task-alerts) | Review completion, attention and failure notices; optionally enable background notifications | Task alerts beside the composer and its unread badge |
+| [Project notes](packages/dsh-project-notes) | Keep requirements, errors, ideas and a small checklist for each workspace | Project notes beside the composer |
+| [Selection actions](packages/dsh-selection-actions) | Quote a passage and prepare a follow-up question, translation or explanation | Ask about selection beside selected message text, or the composer toolbar |
 
 New tools use compact toolbar icons with hover labels and wrap in narrow windows. All tools include Chinese, English and light/dark theme styles.
 
@@ -43,7 +43,13 @@ Install, enable and reload when DSH requests it. This package contains all eight
 
 ### Install individual tools
 
-Open a standalone repository from the table and paste its GitHub URL into the same Add plugin field. Each tool works independently and does not require the collection package.
+All eight tools live in this repository's [`packages/`](packages) directory. Each directory is independently installable. For Project notes, paste this into the same Add plugin field:
+
+```text
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes
+```
+
+See the [installation guide](docs/INSTALLATION.md#方式二只装需要的插件) for every subdirectory address. Only the selected plugin is installed. Existing standalone repositories remain available as compatibility links.
 
 **Do not install both the collection and the same individual tools.** Duplicate copies can add duplicate controls and listeners. If you already use standalone `dsh-quick-prompts`, uninstall it before switching to the collection. Existing prompts use the same storage key and remain readable on the same DSH origin when site data is preserved.
 
@@ -72,6 +78,8 @@ See each standalone README for exact limits. Verification passed 38 model checks
 
 ## Source layout
 
-`packages/` contains one source directory per plugin, synchronized to a same-name standalone GitHub repository. The root package combines all eight prebuilt clients. Each standalone package includes its own bundle and shared code and does not depend on the collection directory.
+This repository is the common home for all eight tools. [`packages/`](packages) contains one self-contained directory per plugin: `dsh-quick-prompts`, `dsh-conversation-outline`, `dsh-draft-history`, `dsh-answer-library`, `dsh-turn-files`, `dsh-task-alerts`, `dsh-project-notes` and `dsh-selection-actions`.
+
+The root package combines all eight prebuilt clients. Each subdirectory includes its own bundle and shared code and can be installed with `#path:/packages/plugin-name`. Same-name standalone repositories are retained for compatibility; browsing, documentation and the primary installation instructions are centralized here.
 
 For development, use `npm ci`, `npm run build` and `npm test`. Browser and real DSH validation are described separately in the verification notes. Normal installation requires no build tools.

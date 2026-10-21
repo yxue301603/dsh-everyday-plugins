@@ -52,5 +52,17 @@
 f60e72b9b23e6ea2c19350a8258987a12768c038adf77802405477858d5d808a
 ```
 
+### 主仓库的子目录独立安装
+
+按统一仓库导航的要求，另用新的隔离 profile 实测以下完整地址：
+
+```text
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes
+```
+
+真实 DSH 原生安装器一次成功，仅安装和启用 `dsh-project-notes 0.1.0`，确认没有安装整套包；客户端 SHA256 与当前构建一致。结果：`artifacts/github-subdirectory-install-result.json`。本次没有逐个对子目录地址做八次网络安装；八个目录的预构建结构一致，整套与独立包的功能和安装检查已覆盖前述范围。
+
+页面浏览与主安装说明现已统一到总仓库 `packages/`。同名独立仓库保留兼容旧地址，原有本地安装与插件数据不需要因导航调整而迁移。
+
 所有脚本、公开截图、文档和构建产物已提交；工作机完整运行报告留在忽略提交的 `artifacts/`，配置备份位于忽略提交的 `.cache/`。源码和预构建文件不包含个人会话、凭据或这些目录。
 

@@ -10,16 +10,16 @@
 
 ## 选你用得上的
 
-| 插件与独立仓库 | 什么时候有用 | 使用入口 |
+| 插件目录 | 什么时候有用 | 使用入口 |
 | --- | --- | --- |
-| [常用指令快捷面板](https://github.com/yxue301603/dsh-quick-prompts) | 一键填入「继续完成」「检查本次改动」；自定义、置顶、分类、模板变量与最近使用 | 输入框旁「快捷指令」，或置顶指令按钮 |
-| [对话目录](https://github.com/yxue301603/dsh-conversation-outline) | 在长对话中搜索自己问过的问题，跳回上下文，继续上次阅读 | 输入框旁「对话目录」 |
-| [草稿历史](https://github.com/yxue301603/dsh-draft-history) | 写坏了或误清空后，预览并恢复这个会话的旧草稿 | 输入框旁「草稿历史」 |
-| [回答收藏](https://github.com/yxue301603/dsh-answer-library) | 留住有用的命令、解释和摘录，加标签后随时搜索、复制或放回草稿 | 回答下方 `☆`，或输入框旁「回答收藏」 |
-| [本轮文件](https://github.com/yxue301603/dsh-turn-files) | 按轮次找交付文件与已记录的改动，复制路径、预览或定位所在目录 | 输入框旁「本轮文件」 |
-| [任务提醒](https://github.com/yxue301603/dsh-task-alerts) | 集中查看完成、待确认与失败记录；需要时开启后台系统通知 | 输入框旁「任务提醒」及未读数量 |
-| [项目便笺](https://github.com/yxue301603/dsh-project-notes) | 记需求、报错和临时想法；勾选小待办，选中文字交给 AI 继续讨论 | 输入框旁「项目便笺」 |
-| [选文操作](https://github.com/yxue301603/dsh-selection-actions) | 选中回答中的一句话，带着引用追问、翻译或解释 | 消息选区旁「选中追问」，或输入框工具区 |
+| [常用指令快捷面板](packages/dsh-quick-prompts) | 一键填入「继续完成」「检查本次改动」；自定义、置顶、分类、模板变量与最近使用 | 输入框旁「快捷指令」，或置顶指令按钮 |
+| [对话目录](packages/dsh-conversation-outline) | 在长对话中搜索自己问过的问题，跳回上下文，继续上次阅读 | 输入框旁「对话目录」 |
+| [草稿历史](packages/dsh-draft-history) | 写坏了或误清空后，预览并恢复这个会话的旧草稿 | 输入框旁「草稿历史」 |
+| [回答收藏](packages/dsh-answer-library) | 留住有用的命令、解释和摘录，加标签后随时搜索、复制或放回草稿 | 回答下方 `☆`，或输入框旁「回答收藏」 |
+| [本轮文件](packages/dsh-turn-files) | 按轮次找交付文件与已记录的改动，复制路径、预览或定位所在目录 | 输入框旁「本轮文件」 |
+| [任务提醒](packages/dsh-task-alerts) | 集中查看完成、待确认与失败记录；需要时开启后台系统通知 | 输入框旁「任务提醒」及未读数量 |
+| [项目便笺](packages/dsh-project-notes) | 记需求、报错和临时想法；勾选小待办，选中文字交给 AI 继续讨论 | 输入框旁「项目便笺」 |
+| [选文操作](packages/dsh-selection-actions) | 选中回答中的一句话，带着引用追问、翻译或解释 | 消息选区旁「选中追问」，或输入框工具区 |
 
 新增工具使用紧凑图标入口，悬停可查看名称，窄窗口下自动换行。每个插件都有中文、英文以及深色、浅色主题样式。
 
@@ -43,7 +43,13 @@ https://github.com/yxue301603/dsh-everyday-plugins
 
 ### 按需安装
 
-只想要草稿保护或项目便笺？点击表格中的独立仓库，把对应 GitHub 地址粘贴到同一个「添加插件」输入框。各插件可单独安装，不需要总仓库作为依赖。
+八个插件统一放在本仓库的 [`packages/`](packages) 目录，每个子目录都是可独立安装的原生插件。只装项目便笺时，在同一个「添加插件」输入框粘贴：
+
+```text
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes
+```
+
+其他插件的完整子目录安装地址见 [安装指南](docs/INSTALLATION.md#方式二只装需要的插件)。该方式只安装选中的插件；已有独立仓库地址继续作为兼容入口。
 
 **不要同时安装整套和其中相同的独立插件**，以免重复入口或重复监听。如果已安装之前的 `dsh-quick-prompts`，转为整套前先卸载独立版；保持同一个 DSH 来源、不清除站点数据时，原有快捷指令使用同一存储键，可以继续读取。
 
@@ -72,6 +78,21 @@ GitHub 安装需要能够访问 GitHub；DSH 中的 npm 镜像选择不会代理
 
 ## 仓库结构
 
-`packages/` 按插件组织源码，每个目录会同步到同名独立 GitHub 仓库。总包整合 8 个插件的预构建客户端；独立包带有自己的构建产物和共享代码，不依赖总仓库目录。
+本仓库统一管理八个插件，目录按功能命名：
+
+```text
+dsh-everyday-plugins/
+└─ packages/
+   ├─ dsh-quick-prompts/          常用指令
+   ├─ dsh-conversation-outline/   对话目录
+   ├─ dsh-draft-history/          草稿历史
+   ├─ dsh-answer-library/         回答收藏
+   ├─ dsh-turn-files/             本轮文件
+   ├─ dsh-task-alerts/            任务提醒
+   ├─ dsh-project-notes/          项目便笺
+   └─ dsh-selection-actions/      选文操作
+```
+
+根包整合全部客户端。每个子目录携带自己的构建产物和必要共享代码，可以用 `#path:/packages/插件名` 按需安装。GitHub 上的同名独立仓库保留兼容旧链接，日常浏览、文档和主安装入口统一到这里。
 
 开发者可使用 `npm ci` 安装开发依赖，`npm run build` 构建，`npm test` 运行模型与契约测试；浏览器和真实 DSH 验证以验证说明为准。普通使用者直接在 DSH 安装即可。

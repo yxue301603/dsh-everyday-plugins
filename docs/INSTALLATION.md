@@ -23,20 +23,22 @@ https://github.com/yxue301603/dsh-everyday-plugins
 
 ## 方式二：只装需要的插件
 
-在同一个「添加插件」输入框中使用以下任一地址：
+八个插件集中在总仓库的 `packages/` 下。目录页面用于浏览源码；在同一个「添加插件」输入框中使用以下 `#path:` 安装地址：
 
 | 功能 | 可直接填写的 GitHub 来源 |
 | --- | --- |
-| 常用指令快捷面板 | `https://github.com/yxue301603/dsh-quick-prompts` |
-| 对话目录 | `https://github.com/yxue301603/dsh-conversation-outline` |
-| 草稿历史 | `https://github.com/yxue301603/dsh-draft-history` |
-| 回答收藏 | `https://github.com/yxue301603/dsh-answer-library` |
-| 本轮文件 | `https://github.com/yxue301603/dsh-turn-files` |
-| 任务提醒 | `https://github.com/yxue301603/dsh-task-alerts` |
-| 项目便笺 | `https://github.com/yxue301603/dsh-project-notes` |
-| 选文操作 | `https://github.com/yxue301603/dsh-selection-actions` |
+| 常用指令快捷面板 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-quick-prompts` |
+| 对话目录 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-conversation-outline` |
+| 草稿历史 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-draft-history` |
+| 回答收藏 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-answer-library` |
+| 本轮文件 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-turn-files` |
+| 任务提醒 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-task-alerts` |
+| 项目便笺 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes` |
+| 选文操作 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-selection-actions` |
 
-各独立仓库都自带构建产物和必要共享代码。只安装某一个时，不依赖总包，也不需要把整个源码仓库放入 DSH。
+每个子目录都自带构建产物和必要共享代码，只安装选中的插件，不安装整套工具箱。该语法由原生安装器使用的 [pnpm Git 子目录来源](https://pnpm.io/package-sources#install-from-a-subdirectory-of-a-git-repository)提供；本轮已用真实 DSH 从项目便笺子目录安装，验证版本、自动启用和客户端哈希。
+
+兼容之前发布的地址时，也可以继续使用 `https://github.com/yxue301603/插件名`，例如 `https://github.com/yxue301603/dsh-project-notes`。这些独立仓库保留为兼容入口；统一导航以总仓库为准。两个来源提供同一插件，任选一个安装即可。
 
 ## 已装快捷指令，如何换成整套
 
@@ -62,10 +64,10 @@ dsh plugin --profile web add github:yxue301603/dsh-everyday-plugins
 只装项目便笺的示例：
 
 ```sh
-dsh plugin --profile web add github:yxue301603/dsh-project-notes
+dsh plugin --profile web add 'https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes'
 ```
 
-将最后的仓库名换成表格中对应名称即可。桌面版请使用**桌面应用自己的插件管理器**，不要把 Web profile 的安装成功当成桌面版已经安装成功。不同 profile 的包配置可能相互独立。
+按需安装时，将 `packages/` 后的插件目录名换成表格中对应名称即可。桌面版请使用**桌面应用自己的插件管理器**，不要把 Web profile 的安装成功当成桌面版已经安装成功。不同 profile 的包配置可能相互独立。
 
 如果下载受网络影响，可以从 GitHub 获取已经构建的插件源码目录后，在「添加插件」中填写该目录的本地绝对路径。整套请选择根目录，单插件请选择包含相应 `package.json`、`cordis.patch.yml` 和 `lib/client.js` 的独立目录。不要只复制 `src/`。
 
@@ -106,11 +108,11 @@ Use DeepSeek Harness **0.2.1-rc.2 or a subsequent 0.2.x release**. Web and Deskt
 Choose **one** installation style:
 
 - Collection: paste `https://github.com/yxue301603/dsh-everyday-plugins` into **Plugins → Add plugin**.
-- Individual tools: paste a standalone GitHub URL from the table above. Each package works without the collection.
+- Individual tools: paste a `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/plugin-name` URL from the table above. Each package works without the collection. Same-name standalone repositories remain compatibility sources.
 
 Install, enable and reload when the host requests it. Never run the collection alongside duplicate standalone tools. On Desktop use the desktop application's own plugin manager; the Web CLI profile does not install into your Desktop profile.
 
-For Web CLI, use `dsh plugin --profile web add github:yxue301603/dsh-everyday-plugins`, or replace the last repository name with an individual tool. GitHub must be reachable; an npm mirror does not proxy GitHub. A downloaded, prebuilt package directory can also be added using its absolute local path.
+For Web CLI, use `dsh plugin --profile web add github:yxue301603/dsh-everyday-plugins` for the suite. For one tool, use the full subdirectory URL from the table as a single quoted argument. GitHub must be reachable; an npm mirror does not proxy GitHub. A downloaded, prebuilt package directory can also be added using its absolute local path.
 
 To switch from standalone Quick prompts, export important prompts, uninstall the standalone copy, install the collection, then reload. The original `dsh.quick-prompts.v1` key is reused on the same DSH browser origin. Other tools also retain their own keys. Preserve site data. Different devices, profiles with different browser storage, or origins do not synchronize automatically.
 
