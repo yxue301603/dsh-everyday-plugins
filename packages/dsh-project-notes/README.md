@@ -4,7 +4,13 @@
 
 ## 安装与使用
 
-在 DSH「插件 → 添加插件」中填写本插件的独立 GitHub 仓库地址或本地插件目录，启用后按宿主提示重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。
+在 DSH「插件 → 添加插件」中填写以下 GitHub 仓库地址（也可使用本地插件目录），启用后按宿主提示重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。
+
+```text
+https://github.com/yxue301603/dsh-project-notes
+```
+
+整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
 
 输入框旁点击「项目便笺」，顶端显示当前工作区路径。同一路径下的会话共享记录；不同工作区相互隔离。没有工作区时使用「通用便笺」。Windows 路径大小写和结尾斜杠会归一化。
 

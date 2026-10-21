@@ -4,7 +4,13 @@ A local notebook and a lightweight checklist for each DeepSeek Harness workspace
 
 ## Install and use
 
-Open **Plugins → Add plugin** in DSH and enter this plugin's standalone GitHub repository URL or local package directory. Enable and reload when requested. Requires DSH **0.2.1-rc.2 or a newer 0.2.x version**.
+Open **Plugins → Add plugin** in DSH and enter the following GitHub repository URL (or a local package directory). Enable and reload when requested. Requires DSH **0.2.1-rc.2 or a newer 0.2.x version**.
+
+```text
+https://github.com/yxue301603/dsh-project-notes
+```
+
+For collection installation, migration and upgrades, see the [installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide).
 
 Open **Project notes** beside the composer. The current workspace path appears at the top. Conversations in the same workspace share a notebook; different paths have separate notebooks. Without a workspace, a general notebook is used. Windows path case and trailing slashes are normalized.
 

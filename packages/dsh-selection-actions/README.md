@@ -21,6 +21,8 @@ https://github.com/yxue301603/dsh-selection-actions
 
 命令行：`dsh plugin --profile web add github:yxue301603/dsh-selection-actions`。桌面版使用桌面版自身的插件管理器。
 
+整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
+
 ## 数据与边界
 
 不读取剪贴板，不发网络请求，不自动调用模型。引用只暂存在当前窗口内存，刷新或退出后清除；单次最多 12,000 字。只接受同一条已显示消息内的选区，排除输入框、插件面板和工具输出，不支持跨多条消息的混合选区。

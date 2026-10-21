@@ -13,4 +13,12 @@ Stores up to 200 notices locally. English/Chinese and dark/light themes. No API 
 
 **Needs attention** is emitted only for a live native pending interaction. A `blocked` turn has already ended after a pre-step rejection; it is labeled **Ended**, not treated as an approval request.
 
-See the collection's release instructions for standalone installation. Requires DSH `0.2.1-rc.2` or a compatible version.
+## Install
+
+In DSH, open **Plugins → Add plugin** and paste:
+
+```text
+https://github.com/yxue301603/dsh-task-alerts
+```
+
+Enable the plugin and reload as requested. Prebuilt files are included; no build step is required. Requires **DSH 0.2.1-rc.2 or a compatible 0.2.x version**. See the [collection installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide) for migration and upgrades.

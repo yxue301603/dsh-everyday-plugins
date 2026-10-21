@@ -8,4 +8,12 @@
 
 支持中英文、深浅主题。插件不执行 Shell 命令，也不会把模型返回的路径当作系统命令执行。打开所在目录通过 DSH 官方接口使用事件坐标，由宿主再次验证文件权限。无模型调用、无外部网络传输。
 
-独立安装包和安装说明见主仓库发布页。需要 DeepSeek Harness `0.2.1-rc.2` 或兼容版本，以及原生交付物与侧栏功能。
+## 安装
+
+在 DSH 的「插件 → 添加插件」中粘贴：
+
+```text
+https://github.com/yxue301603/dsh-turn-files
+```
+
+安装并启用后，按 DSH 提示重新加载。仓库已包含预构建文件，无需自行编译。需要 **DSH 0.2.1-rc.2 或兼容的 0.2.x 版本**。迁移、整套安装与升级说明见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。

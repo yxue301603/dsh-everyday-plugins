@@ -21,6 +21,8 @@ Enable and reload as requested by DSH. Open **Chat outline** from the composer t
 
 CLI users: `dsh plugin --profile web add github:yxue301603/dsh-conversation-outline`. Desktop users should use the desktop plugin manager.
 
+For collection installation, migration and upgrades, see the [installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide).
+
 ## Privacy and limits
 
 Reads the current session's public Chat snapshot. No disk scanning, network requests, model calls, or automatic messages. Local reading records contain session IDs, message identities, and timestamps, capped at 100 sessions; question text is not copied into storage.

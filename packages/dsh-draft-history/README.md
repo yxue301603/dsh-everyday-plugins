@@ -4,7 +4,13 @@
 
 ## 安装与使用
 
-在 DSH「插件 → 添加插件」中填写本插件的独立 GitHub 仓库地址或本地插件目录；按宿主提示启用及重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。它是原生 DSH 插件，无须安装浏览器扩展，不调用模型。
+在 DSH「插件 → 添加插件」中填写以下 GitHub 仓库地址（也可使用本地插件目录）；按宿主提示启用及重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。它是原生 DSH 插件，无须安装浏览器扩展，不调用模型。
+
+```text
+https://github.com/yxue301603/dsh-draft-history
+```
+
+整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
 
 输入框旁点击「草稿历史」。输入停止约 0.9 秒时自动记录；在发送、清空或离开会话前尽量保存最后一份文本。也可以点击「保存当前」立即保存。DSH 自带草稿持久化继续正常工作；插件不会在你进入会话时自行覆盖输入框。
 

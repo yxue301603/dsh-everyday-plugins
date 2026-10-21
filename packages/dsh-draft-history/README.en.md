@@ -4,7 +4,13 @@ A small safety net for the native DeepSeek Harness composer. Browse, search, cop
 
 ## Install and use
 
-In DSH, open **Plugins → Add plugin** and enter this plugin's standalone GitHub repository URL or local package directory. Enable it and reload when requested. Requires DSH **0.2.1-rc.2 or a newer 0.2.x version**. No browser extension or model access is needed.
+In DSH, open **Plugins → Add plugin** and enter the following GitHub repository URL (or a local package directory). Enable it and reload when requested. Requires DSH **0.2.1-rc.2 or a newer 0.2.x version**. No browser extension or model access is needed.
+
+```text
+https://github.com/yxue301603/dsh-draft-history
+```
+
+For collection installation, migration and upgrades, see the [installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide).
 
 Open **Draft history** beside the composer. A version is saved about 900 ms after typing pauses. The last nonempty text is also protected when clearing or leaving a conversation where possible. **Save current** creates an immediate checkpoint. DSH's own draft persistence stays in charge; entering a conversation never overwrites its draft automatically.
 

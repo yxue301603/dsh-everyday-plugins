@@ -21,6 +21,8 @@ Enable and reload as requested. Select text, open **Selection actions** (`↗` i
 
 CLI: `dsh plugin --profile web add github:yxue301603/dsh-selection-actions`. Desktop users should use the desktop plugin manager.
 
+For collection installation, migration and upgrades, see the [installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide).
+
 ## Privacy and limits
 
 No clipboard reads, network requests, or automatic model calls. Quotations stay temporarily in window memory and disappear on reload or exit. A selection may contain up to 12,000 characters inside one visible message. Editor fields, plugin panels, tool output, and selections crossing multiple messages are excluded.

@@ -19,7 +19,13 @@ Eight native DeepSeek Harness plugins for common prompts, long conversations, dr
 | [Project notes](https://github.com/yxue301603/dsh-project-notes) | Keep requirements, errors, ideas and a small checklist for each workspace | Project notes beside the composer |
 | [Selection actions](https://github.com/yxue301603/dsh-selection-actions) | Quote a passage and prepare a follow-up question, translation or explanation | Ask about selection beside selected message text, or the composer toolbar |
 
-Toolbar entries become compact icons in narrow windows; hover for their names. All tools include Chinese, English and light/dark theme styles.
+New tools use compact toolbar icons with hover labels and wrap in narrow windows. All tools include Chinese, English and light/dark theme styles.
+
+Selection actions in an isolated, real DSH instance, using synthetic test content:
+
+| Light theme | Dark theme |
+| --- | --- |
+| ![Light selection actions](docs/screenshots/selection-light.png) | ![Dark selection actions](docs/screenshots/selection-dark.png) |
 
 ## Two installation options
 

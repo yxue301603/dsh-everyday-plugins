@@ -15,10 +15,10 @@ const eventSource = observable({ entries: events, change: { kind: 'replace', ent
 const status = observable(new Map([['test', { pendingInteraction: undefined }]]));
 const nodes = [
   { kind: 'user', key: 'user:2', anchorSeq: 2, location: { turn: { turn: 1 } }, data: { seq: 2, time: Date.now(), content: [{ type: 'text', text: '如何为当前项目添加测试？' }], source: { kind: 'user' } } },
-  { kind: 'assistant', key: 'assistant:3', anchorSeq: 3, location: { turn: { turn: 1 } }, data: { seq: 3, time: Date.now(), content: [{ type: 'text', text: '先检查项目配置，然后运行相关测试。\n保持修改范围清晰。' }] } },
+  { kind: 'assistant-step', key: 'assistant:3', anchorSeq: 3, location: { turn: { turn: 1 } }, data: { seq: 3, finalNode: { seq: 3, messageId: 'answer-1' }, time: Date.now(), content: [{ type: 'text', text: '先检查项目配置，然后运行相关测试。\n保持修改范围清晰。' }] } },
   { kind: 'user', key: 'user:8', anchorSeq: 8, location: { turn: { turn: 2 } }, data: { seq: 8, time: Date.now(), content: [{ type: 'text', text: '解释数据库连接失败的原因' }], source: { kind: 'user' } } },
 ];
-const chat = observable({ order: nodes.map(node => node.key), nodes: { get: key => nodes.find(node => node.key === key) }, turnNavigation: { turns: [] } });
+const chat = observable({ order: nodes.map(node => node.key), nodes: new Map(nodes.map(node => [node.key, node])), turnNavigation: { turns: [] } });
 const session = observable({ id: 'test', hasMore: false, loadingOlder: false, running: false });
 let activeSession = 'test', submitted = 0, editor;
 const actionLog = []; const disposers = []; const slots = new Map(); const slotState = observable(0);
@@ -32,7 +32,7 @@ const binding = { eventSource, session: { async loadOlder() { actionLog.push({ t
 const uiWorkspace = { openSession(id) { activeSession = id; actionLog.push({ type: 'session', id }); } };
 const sidebarRight = { openResource(address) { actionLog.push({ type: 'preview', address }); } };
 const ctx = {
-  locale, sessions: { list, binding: id => id === 'test' ? binding : undefined }, uiWorkspace, sidebarRight, uiSession: { sessionStatus: status }, uiConversation: {},
+  locale, sessions: { list, binding: id => id === 'test' ? binding : undefined }, uiWorkspace, sidebarRight, uiSession: { sessionStatus: status }, uiConversation: { binding: id => id === 'test' ? { target: name => name === 'chat' ? chat : undefined } : undefined },
   get(name) { return this[name]; },
   on(event, fn) { if (event === 'dispose') disposers.push(fn); return () => {}; },
   effect(fn) { const dispose = fn(); if (typeof dispose === 'function') disposers.push(dispose); return dispose; },
@@ -55,7 +55,7 @@ function Host() {
   const props = { sessionId: 'test', inputActions, useInput: selector => useSnapshot(input, selector), useSession: selector => useSnapshot(session, selector), useChat: selector => useSnapshot(chat, selector), useConversation: selector => useSnapshot(chat, selector) };
   return <>
     <div className="host-top"><span className="host-title">DSH Everyday · isolated test</span><button onClick={() => document.body.classList.toggle('dark')}>切换主题</button><button onClick={() => { const next = workspace === 'alpha' ? 'beta' : 'alpha'; setWorkspace(next); const before = list.getSnapshot(); list.set({ ...before, byId: { ...before.byId, test: { ...before.byId.test, cwd: `C:/projects/${next}` } } }); }}>切换项目</button><button onClick={() => { for (const dispose of [...disposers].reverse()) dispose(); }}>卸载工具</button></div>
-    <div data-conversation-session="test"><div data-conversation-scroll="" className="host-scroll"><nav>{[1, 2].map(turn => <button key={turn} aria-label={`跳转到第 ${turn} 轮`} onClick={() => { actionLog.push({ type: 'turn', turn }); document.querySelector(`[data-chat-turn="${turn}"]`)?.scrollIntoView({ block: 'nearest' }); }}>第 {turn} 轮</button>)}</nav><div className="host-chat">{nodes.map(node => <article className="host-message" key={node.key} data-chat-node-key={node.key} data-chat-flow-kind={node.kind} data-chat-turn={node.location.turn.turn} data-message-seq={node.anchorSeq}><p data-message-text="">{node.data.content[0].text}</p>{node.kind === 'assistant' && <Slot name="conversation.chat.assistant-actions" props={{ ...props, messageId: 'answer-1' }} />}</article>)}</div></div></div>
+    <div data-conversation-session="test"><div data-conversation-scroll="" className="host-scroll"><nav>{[1, 2].map(turn => <button key={turn} aria-label={`跳转到第 ${turn} 轮`} onClick={() => { actionLog.push({ type: 'turn', turn }); document.querySelector(`[data-chat-turn="${turn}"]`)?.scrollIntoView({ block: 'nearest' }); }}>第 {turn} 轮</button>)}</nav><div className="host-chat">{nodes.map(node => <article className="host-message" key={node.key} data-chat-node-key={node.key} data-chat-flow-kind={node.kind} data-chat-turn={node.location.turn.turn}><p data-message-text="">{node.data.content[0].text}</p>{node.kind === 'assistant-step' && <Slot name="conversation.chat.assistant-actions" props={{ ...props, messageId: 'answer-1' }} />}</article>)}</div></div></div>
     <div className="host-stage"><Slot name="conversation.input.dock" props={props} /><div className="host-input-bar"><div className="host-composer"><textarea aria-label="Harness 草稿" ref={node => { editor = node; }} value={value.draft} onChange={event => window.__test.setDraft(event.target.value)} /><span className="host-attachment">附件 image-1 保留</span><div className="host-tools"><Slot name="conversation.input.left" props={props} /><span style={{ marginLeft: 'auto' }}>Send</span></div></div></div></div>
   </>;
 }

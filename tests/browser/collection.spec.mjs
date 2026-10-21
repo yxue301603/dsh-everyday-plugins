@@ -74,6 +74,20 @@ test('answer actions save only visible text and tags can be edited and searched'
   expect(await page.evaluate(() => window.__test.snapshot().draft)).toBe('新草稿，不能覆盖');
 });
 
+test('key-only native answer rows preserve an excerpt and locate its original message', async ({ page }) => {
+  const text = '先检查项目配置，然后运行相关测试。';
+  await page.locator('[data-chat-node-key="assistant:3"] [data-message-text]').evaluate((element, text) => {
+    const range = document.createRange(); range.setStart(element.firstChild, 0); range.setEnd(element.firstChild, text.length);
+    const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+  }, text);
+  await page.getByRole('button', { name: '收藏回答或选文', exact: true }).click();
+  await open(page, 'dsh-answer-library');
+  await expect(current(page).locator('article pre')).toHaveText(text);
+  await current(page).getByRole('button', { name: '原会话', exact: true }).click();
+  await expect(current(page)).toHaveCount(0);
+  expect(await page.evaluate(() => window.__test.actions.some(action => action.type === 'turn' && action.turn === 1))).toBe(true);
+});
+
 test('native file records deduplicate by turn and use authorized preview and reveal routes', async ({ page }) => {
   await open(page, 'dsh-turn-files');
   await expect(current(page).locator('article')).toHaveCount(1); await expect(current(page)).toContainText('report.md');

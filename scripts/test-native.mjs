@@ -14,11 +14,12 @@ const patch = resolve(`.cache/native-overlay-${run}.yml`), key = randomUUID();
 const fixtureDir = resolve('.cache/native-fixture-package');
 const origin = 'http://127.0.0.1:43280';
 await mkdir(dataHome, { recursive: true }); await mkdir(work, { recursive: true }); await mkdir('artifacts', { recursive: true });
+await mkdir('docs/screenshots', { recursive: true });
 await mkdir(fixtureDir, { recursive: true });
 await writeFile(resolve(fixtureDir, 'package.json'), JSON.stringify({ name: 'dsh-everyday-native-test-fixture', version: '0.0.0', type: 'module', main: './index.mjs' }));
-await writeFile(resolve(fixtureDir, 'index.mjs'), await readFile('.cache/native-fixture-proposal.mjs'));
+await writeFile(resolve(fixtureDir, 'index.mjs'), await readFile('tests/native/fixture.mjs'));
 await writeFile(patch, `- insert:\n    - id: dsh-everyday-plugins\n      name: ${JSON.stringify(resolve('index.js').replaceAll('\\', '/'))}\n    - id: everyday-native-test-fixture\n      name: ${JSON.stringify(resolve(fixtureDir, 'index.mjs').replaceAll('\\', '/'))}\n`);
-const result = { status: 'running', run, checks: {}, themes: [], layout: [], errors: [], synthetic: true };
+const result = { status: 'running', run, checks: {}, themes: [], layout: [], errors: [], consoleErrors: [], failedRequests: [], blockedDesktopActions: [], contrastFailures: [], layoutFailures: [], synthetic: true };
 const delay = ms => new Promise(done => setTimeout(done, ms));
 let logs = '', exited = false, browser, page;
 const child = spawn(electron, ['--expose-internals', bin, '--profile', 'web', '--patch', patch, '--no-open', '--host', '127.0.0.1', '--port', '43280'], {
@@ -46,7 +47,13 @@ async function open(id, label) {
 }
 async function close(id) { await dialog(id).getByRole('button', { name: '关闭', exact: true }).click(); }
 async function draft() { return (await page.locator('[contenteditable="true"]').first().innerText()).trim(); }
-async function setDraft(text) { const editor = page.locator('[contenteditable="true"]').first(); await editor.fill(text); await editor.press('Control+End'); }
+async function setDraft(text) {
+  const editor = page.locator('[contenteditable="true"]').first();
+  if (text) await editor.fill(text);
+  else { await editor.click(); await editor.press('Control+a'); await editor.press('Backspace'); }
+  await editor.press('Control+End'); await expect.poll(draft).toBe(text);
+  await page.waitForTimeout(120); await expect.poll(draft).toBe(text);
+}
 async function undoTo(text) { const editor = page.locator('[contenteditable="true"]').first(); await editor.click(); await editor.press('Control+z'); await expect.poll(draft).toBe(text); }
 async function selectSentence(sessionId) {
   await page.evaluate(id => {
@@ -64,7 +71,10 @@ async function selectSentence(sessionId) {
   }, sessionId);
 }
 function measureContrast(element) {
-  const parse = value => { const m = value.match(/[\d.]+/g)?.map(Number); if (!m || m.length < 3) throw new Error(value); return [m[0], m[1], m[2], m[3] ?? 1]; };
+  // Canvas resolves rgb(), color(srgb …), and modern color-mix() uniformly.
+  const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const parse = value => { context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1); const pixel = context.getImageData(0, 0, 1, 1).data; return [pixel[0], pixel[1], pixel[2], pixel[3] / 255]; };
   const mix = (top, bottom) => [0, 1, 2].map(i => top[i] * top[3] + bottom[i] * (1 - top[3])).concat(1);
   let background = [255, 255, 255, 1];
   const ancestors = []; for (let parent = element; parent; parent = parent.parentElement) ancestors.push(parent);
@@ -95,23 +105,56 @@ try {
   });
   page = await context.newPage();
   page.on('pageerror', error => result.errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') result.errors.push(message.text()); });
-  await page.route('**/api/present.open**', route => route.abort('blockedbyclient'));
+  page.on('console', message => { if (message.type() === 'error') result.consoleErrors.push({ text: message.text(), location: message.location() }); });
+  page.on('requestfailed', request => result.failedRequests.push({ url: request.url().replace(/(token)=([^&]+)/g, '$1=[isolated-test-token]'), failure: request.failure() }));
+  await page.route('**/api/present.open**', route => {
+    // GET only lists available applications; POST is the desktop side effect.
+    if (route.request().method() === 'GET') return route.continue();
+    result.blockedDesktopActions.push({ method: route.request().method(), url: route.request().url() });
+    return route.abort('blockedbyclient');
+  });
   const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(/http:\/\/127\.0\.0\.1:43280[^\s]*/g) ?? [];
   await page.goto(urls.at(-1) ?? `${origin}/`);
-  await page.waitForTimeout(2000);
-  for (const name of ['继续', '稍后配置', 'Configure later']) {
-    const control = page.getByRole('button', { name, exact: true });
-    if (await control.count() && await control.first().isVisible()) await control.first().click();
+  for (let i = 0; i < 15; i++) {
+    await page.waitForTimeout(300);
+    for (const name of ['继续', '稍后配置', 'Configure later']) {
+      const control = page.getByRole('button', { name, exact: true });
+      if (await control.count() && await control.first().isVisible() && await control.first().isEnabled()) await control.first().click({ timeout: 1000 }).catch(() => {});
+    }
+    const startup = page.getByRole('dialog', { name: '开始使用', exact: true });
+    if (await startup.isVisible()) await startup.getByRole('button', { name: '关闭', exact: true }).click({ timeout: 1000 }).catch(() => {});
   }
-  const startup = page.getByRole('dialog', { name: '开始使用', exact: true });
-  if (await startup.isVisible()) await startup.getByRole('button', { name: '关闭', exact: true }).click();
   await snapshot('initial');
-  const source = page.getByText('Everyday native fixture', { exact: true });
-  await expect(source.last()).toBeVisible({ timeout: 20000 }); await source.last().click();
+  const source = page.locator(`[data-row-key="session:${state.sessionId}"]`);
+  await expect(source).toBeVisible({ timeout: 20000 }); await source.click();
   await expect(page.locator(`[data-conversation-session="${state.sessionId}"]`)).toBeVisible();
   await expect(page.locator('.ed-launch')).toHaveCount(7, { timeout: 15000 });
   result.checks.nativeBoot = true; await snapshot('conversation');
+  await page.setViewportSize({ width: 390, height: 1000 });
+  if (process.env.DSH_NATIVE_PROBE_LAYOUT === '1') {
+    result.toolbarAncestors = await page.locator('.ed-launch').first().evaluate(node => {
+      const items = [];
+      for (let parent = node.parentElement, depth = 0; parent && depth < 5; parent = parent.parentElement, depth++) {
+        items.push({ tag: parent.tagName, attributes: Object.fromEntries(parent.getAttributeNames().map(name => [name, parent.getAttribute(name)])),
+          children: [...parent.children].map(child => ({ tag: child.tagName, class: child.className, slot: child.getAttribute('data-slot') })), outerHTML: parent.outerHTML.slice(0, 2500) });
+      }
+      return items;
+    });
+    await page.addStyleTag({ content: '[data-composer-card] div:has(> [data-slot="conversation.input.left"] > .ed-launch){flex-wrap:wrap;min-width:0;flex:1 1 auto}' });
+    result.toolbarProbe = await page.locator('.ed-launch').evaluateAll(nodes => nodes.map(node => { const box = node.getBoundingClientRect(); return { label: node.getAttribute('aria-label'), x: box.x, right: box.right, width: box.width }; }));
+    await page.screenshot({ path: 'artifacts/native-toolbar-wrap-probe.png', fullPage: true });
+    result.status = 'probe-complete'; result.fixtureFinal = await fixture();
+    console.log(JSON.stringify({ ancestors: result.toolbarAncestors.map(item => ({ tag: item.tag, attributes: item.attributes, children: item.children })), toolbar: result.toolbarProbe }, null, 2));
+    throw { nativeProbeComplete: true };
+  }
+  const toolbar = await page.locator('.ed-launch').evaluateAll(nodes => nodes.map(node => {
+    const box = node.getBoundingClientRect(); return { label: node.getAttribute('aria-label'), x: box.x, right: box.right, width: box.width,
+      parentTag: node.parentElement.tagName, parentClass: node.parentElement.className };
+  }));
+  result.layout.push({ id: 'native-all-8-composer', viewport: 390, toolbar });
+  for (const item of toolbar) if (item.x < 0 || item.right > 391) result.layoutFailures.push({ id: 'native-all-8-composer', ...item });
+  await page.screenshot({ path: 'artifacts/native-toolbar-narrow.png', fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
 
   let panel = await open('dsh-conversation-outline', '对话目录');
   await expect(panel.locator('.ed-list > button')).toHaveCount(3);
@@ -131,6 +174,7 @@ try {
   await undoTo('保留的原始草稿'); result.checks.selectionInsertionAndUndo = true;
 
   await page.getByRole('button', { name: '收藏回答或选文', exact: true }).first().click();
+  result.bookmarkFirstActionMessages = await page.getByRole('status').allTextContents();
   panel = await open('dsh-answer-library', '回答收藏');
   await expect(panel.locator('article')).toHaveCount(1);
   await panel.getByRole('button', { name: '编辑与标签', exact: true }).click();
@@ -142,6 +186,17 @@ try {
   await expect.poll(draft).toContain('Native fixture answer'); await undoTo('保留的原始草稿');
   result.checks.answerBookmarkTagsInsertionUndo = true;
 
+  await selectSentence(state.sessionId);
+  await page.getByRole('button', { name: '收藏回答或选文', exact: true }).first().click();
+  panel = await open('dsh-answer-library', '回答收藏');
+  const excerpt = panel.locator('article').filter({ has: page.locator('pre').filter({ hasText: /^Native selection target: explain this sentence\.$/ }) });
+  await expect(excerpt).toHaveCount(1);
+  await expect(excerpt.locator('pre')).toHaveText('Native selection target: explain this sentence.');
+  await excerpt.getByRole('button', { name: '原会话', exact: true }).click(); await expect(panel).not.toBeVisible();
+  const originalRow = page.locator(`[data-conversation-session="${state.sessionId}"] [data-chat-flow-kind="assistant-step"]`).filter({ hasText: 'Native selection target: explain this sentence.' }).first();
+  await expect.poll(async () => { const box = await originalRow.boundingBox(); return !!box && box.y >= 60 && box.y < 800; }).toBe(true);
+  result.checks.bookmarkExcerptAndSourceJump = true;
+
   panel = await open('dsh-turn-files', '本轮文件');
   await expect(panel.locator('article')).toHaveCount(2);
   await expect(panel).toContainText('fixture-report.md'); await expect(panel).toContainText('fixture-results.json');
@@ -150,8 +205,10 @@ try {
   await expect(page.getByText('Synthetic test data only.', { exact: false }).last()).toBeVisible({ timeout: 15000 });
   result.checks.fileDeliverablesAndPreview = true; await snapshot('file-preview');
 
-  await setDraft('原生草稿历史待恢复'); await page.waitForTimeout(1200); await setDraft('');
+  await setDraft('原生草稿历史待恢复'); await page.waitForTimeout(1200);
+  result.draftBeforeClear = await draft(); await setDraft(''); result.draftAfterKeyboardClear = await draft();
   panel = await open('dsh-draft-history', '草稿历史');
+  result.draftWithHistoryOpen = await draft();
   const preview = panel.getByRole('textbox', { name: '历史版本预览', exact: true }); await expect(preview).toHaveValue('原生草稿历史待恢复');
   await panel.getByRole('button', { name: '插入当前草稿', exact: true }).click();
   await expect.poll(draft).toBe('原生草稿历史待恢复'); result.checks.draftRecovery = true;
@@ -163,7 +220,8 @@ try {
   await panel.getByRole('button', { name: /^待办/ }).click();
   await panel.getByRole('textbox', { name: '新待办', exact: true }).fill('完成原生测试');
   await panel.getByRole('button', { name: '添加', exact: true }).click();
-  await panel.getByRole('checkbox', { name: '完成原生测试', exact: true }).check();
+  // The Open filter removes the row immediately after completion.
+  await panel.getByRole('checkbox', { name: '完成原生测试', exact: true }).click();
   await panel.getByRole('button', { name: '已完成', exact: true }).click();
   await expect(panel).toContainText('完成原生测试'); await close('dsh-project-notes'); result.checks.projectNotesAndTasks = true;
 
@@ -176,6 +234,12 @@ try {
   panel = await open('dsh-task-alerts', '任务提醒'); await expect(panel).toContainText('已完成');
   await close('dsh-task-alerts'); result.checks.liveAlertsNoDuplicates = true;
 
+  const quickBaseline = await draft();
+  await page.getByRole('button', { name: '打开快捷指令', exact: true }).click();
+  await expect(page.locator('dialog.dqp-dialog')).toBeVisible();
+  await page.getByRole('searchbox').fill('继续完成'); await page.getByRole('searchbox').press('Enter');
+  await expect.poll(draft).toContain('继续完成当前任务'); await undoTo(quickBaseline); result.checks.existingQuickPrompts = true;
+
   for (const theme of ['light', 'dark']) {
     await page.emulateMedia({ colorScheme: theme });
     await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme'))).toBe(theme === 'dark');
@@ -185,41 +249,64 @@ try {
       for (const element of await panel.locator('h2, input:not([type=checkbox]), textarea, select, button:not(:disabled)').all()) {
         if (!await element.isVisible()) continue;
         const measure = await element.evaluate(measureContrast); measures.push(measure);
-        if (measure.ratio < 4.5) throw new Error(`${theme} ${id} contrast ${measure.ratio}: ${measure.label}`);
+        if (measure.ratio < 4.5) result.contrastFailures.push({ theme, id, ...measure });
       }
       result.themes.push({ theme, id, controls: measures });
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 });
         const bounds = await panel.evaluate(node => ({ scroll: node.scrollWidth, width: node.clientWidth, x: node.getBoundingClientRect().x, right: node.getBoundingClientRect().right }));
-        if (bounds.scroll > bounds.width + 2 || bounds.x < -1 || bounds.right > width + 1) throw new Error(`${id} overflows at ${width}: ${JSON.stringify(bounds)}`);
+        if (bounds.scroll > bounds.width + 2 || bounds.x < -1 || bounds.right > width + 1) result.layoutFailures.push({ id, theme, viewport: width, ...bounds });
         result.layout.push({ id, theme, viewport: width, ...bounds });
       }
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.screenshot({ path: `artifacts/native-${id}-${theme}.png`, fullPage: true }); await close(id);
     }
     await selectSentence(state.sessionId); await page.locator('[data-ed-selection-button]').click(); panel = dialog('dsh-selection-actions');
-    await panel.getByRole('button', { name: '解释', exact: true }).click();
     const measures = [];
-    for (const element of await panel.locator('h2, button:not(:disabled)').all()) {
+    for (const element of await panel.locator('h2, textarea, button:not(:disabled)').all()) {
       if (!await element.isVisible()) continue; const value = await element.evaluate(measureContrast); measures.push(value);
-      if (value.ratio < 4.5) throw new Error(`${theme} selection contrast ${value.ratio}: ${value.label}`);
+      if (value.ratio < 4.5) result.contrastFailures.push({ theme, id: 'dsh-selection-actions', ...value });
     }
+    await panel.getByRole('button', { name: '翻译', exact: true }).click();
+    const language = await panel.getByRole('textbox', { name: '目标语言', exact: true }).evaluate(measureContrast); measures.push(language);
+    if (language.ratio < 4.5) result.contrastFailures.push({ theme, id: 'dsh-selection-actions', ...language });
+    await panel.getByRole('button', { name: '解释', exact: true }).click();
     result.themes.push({ theme, id: 'dsh-selection-actions', controls: measures });
+    await page.setViewportSize({ width: 390, height: 1000 });
+    const selectionBounds = await panel.evaluate(node => ({ scroll: node.scrollWidth, width: node.clientWidth, x: node.getBoundingClientRect().x, right: node.getBoundingClientRect().right }));
+    if (selectionBounds.scroll > selectionBounds.width + 2 || selectionBounds.x < -1 || selectionBounds.right > 391) result.layoutFailures.push({ id: 'dsh-selection-actions', theme, viewport: 390, ...selectionBounds });
+    result.layout.push({ id: 'dsh-selection-actions', theme, viewport: 390, ...selectionBounds });
+    await page.screenshot({ path: `artifacts/native-selection-narrow-${theme}.png`, fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await panel.screenshot({ path: `docs/screenshots/selection-${theme}.png` });
     await page.screenshot({ path: `artifacts/native-dsh-selection-actions-${theme}.png`, fullPage: true }); await close('dsh-selection-actions');
   }
   const final = await fixture();
   if (final.attemptedModelCalls !== 0) throw new Error('A model call was attempted during native tests');
   result.checks.zeroModelCalls = true; result.checks.noSystemNotifications = await page.evaluate(() => window.__nativeNotificationAttempts === 0);
   if (!result.checks.noSystemNotifications) throw new Error('A system notification was attempted');
+  if (result.blockedDesktopActions.length) throw new Error('A desktop open/reveal action was attempted and blocked');
+  if (result.contrastFailures.length) throw new Error(`${result.contrastFailures.length} controls are below 4.5 contrast; see native-result.json`);
+  if (result.layoutFailures.length) throw new Error(`${result.layoutFailures.length} layouts overflow; see native-result.json`);
+  if (result.errors.length) throw new Error(`${result.errors.length} native client errors; see native-result.json`);
+  if (result.consoleErrors.length) throw new Error(`${result.consoleErrors.length} native console errors; see native-result.json`);
   result.status = 'passed'; result.fixtureFinal = final;
   console.log(JSON.stringify({ status: result.status, checks: result.checks, errorCount: result.errors.length }));
 } catch (error) {
-  result.status = 'failed'; result.failure = String(error?.stack ?? error); console.error(result.failure);
-  if (page) try { await snapshot('failure'); } catch {}
-  process.exitCode = 1;
+  if (!error?.nativeProbeComplete) {
+    result.status = 'failed'; result.failure = String(error?.stack ?? error); console.error(result.failure);
+    if (page) try { await snapshot('failure'); } catch {}
+    process.exitCode = 1;
+  }
 } finally {
-  if (browser) await browser.close();
-  await writeFile('artifacts/native-result.json', JSON.stringify(result, null, 2));
+  if (browser) try { await browser.close(); } catch (error) { result.errors.push(`Browser cleanup: ${error.message}`); }
   await writeFile('artifacts/native-host.log', logs.replace(/(processToken|token)=([^\s&]+)/g, '$1=[isolated-test-token]'));
-  if (!exited) await new Promise(done => { const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); killer.on('exit', done); killer.on('error', done); });
+  if (!exited) {
+    if (process.platform === 'win32') await new Promise(done => { const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); killer.on('exit', done); killer.on('error', done); });
+    else child.kill('SIGTERM');
+  }
+  for (let count = 0; count < 20 && !exited; count++) await delay(50);
+  result.cleanup = { hostPid: child.pid, hostExited: exited, browserClosed: !browser?.isConnected() };
+  if (!result.cleanup.hostExited || !result.cleanup.browserClosed) { result.status = 'failed'; result.cleanup.failure = 'Own background processes did not finish cleanly'; process.exitCode = 1; }
+  await writeFile('artifacts/native-result.json', JSON.stringify(result, null, 2));
 }

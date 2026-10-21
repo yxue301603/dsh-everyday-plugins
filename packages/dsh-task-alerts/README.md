@@ -13,4 +13,12 @@
 
 「待确认」仅来自宿主当前仍在等待的原生交互请求。因前置检查拒绝而结束的 `blocked` 轮次属于「已结束」，不会误标为待用户确认。
 
-独立安装包和安装说明见主仓库发布页。需要 DeepSeek Harness `0.2.1-rc.2` 或兼容版本。
+## 安装
+
+在 DSH 的「插件 → 添加插件」中粘贴：
+
+```text
+https://github.com/yxue301603/dsh-task-alerts
+```
+
+安装并启用后，按 DSH 提示重新加载。仓库已包含预构建文件，无需自行编译。需要 **DSH 0.2.1-rc.2 或兼容的 0.2.x 版本**。迁移、整套安装与升级说明见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。

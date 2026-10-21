@@ -23,6 +23,8 @@ https://github.com/yxue301603/dsh-conversation-outline
 
 命令行用户也可运行 `dsh plugin --profile web add github:yxue301603/dsh-conversation-outline`。桌面版请使用其自身的插件管理器。
 
+整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
+
 ## 数据与边界
 
 插件从 DSH 的公开会话与 Chat 快照读取当前会话的已加载提问，不扫描磁盘或其他会话、不访问网络、不调用模型、不发送消息。阅读记录只保存当前设备上的会话 ID、消息定位信息和时间，最多保留 100 个会话，不复制提问正文。卸载插件不会删除 DSH 原会话。
