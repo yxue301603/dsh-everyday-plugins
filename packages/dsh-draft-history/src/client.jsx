@@ -96,6 +96,6 @@ export function apply(ctx) {
     </div>;
   }
 
-  const cleanup = registerTool(ctx, { id: name, title: ['草稿历史', 'Draft history'], icon: '↶', order: 30, Panel, Observer });
+  const cleanup = registerTool(ctx, { id: name, title: ['草稿历史', 'Draft history'], shortTitle: ['草稿', 'Drafts'], icon: '↶', order: 30, Panel, Observer });
   ctx.on('dispose', () => { cleanup?.(); store.dispose(); });
 }

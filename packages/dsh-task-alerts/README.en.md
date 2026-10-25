@@ -1,5 +1,13 @@
 # Task alerts
 
+> An individual tool from [DSH Everyday](https://github.com/yxue301603/dsh-everyday-plugins) · [All demos](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/GALLERY.md) · [Shared issue tracker](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+
+**Return to a clear list of conversations that finished, failed or need your attention.**
+
+![任务提醒 / Task alerts](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/dsh-task-alerts-dark.png)
+
+Actual plugin components, isolated test host, synthetic content.
+
 Keep completion, attention, failure and stop notices in one local DeepSeek Harness inbox.
 
 - Open **Task alerts** next to the composer. Filter unread notices or statuses, and jump back to the source conversation.
@@ -18,7 +26,11 @@ Stores up to 200 notices locally. English/Chinese and dark/light themes. No API 
 In DSH, open **Plugins → Add plugin** and paste:
 
 ```text
-https://github.com/yxue301603/dsh-task-alerts
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-task-alerts
 ```
 
 Enable the plugin and reload as requested. Prebuilt files are included; no build step is required. Requires **DSH 0.2.1-rc.2 or a compatible 0.2.x version**. See the [collection installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide) for migration and upgrades.
+
+## Feedback and releases
+
+Use the [shared issue tracker](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose) and select this tool. [Pinned downloads and checksums](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [Contributing](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/CONTRIBUTING.md). The same-name standalone repository remains a compatibility source.

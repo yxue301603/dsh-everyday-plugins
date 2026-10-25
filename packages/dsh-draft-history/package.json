@@ -1,6 +1,6 @@
 {
   "name": "dsh-draft-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：自动记录会话草稿、预览历史和安全恢复。",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "lib/client.js",
     "cordis.patch.yml",
     "icon.svg",
+    "screenshots.json",
     "README.md",
     "README.en.md",
     "LICENSE"
@@ -33,14 +34,16 @@
     "type": "git",
     "url": "git+https://github.com/yxue301603/dsh-draft-history.git"
   },
-  "homepage": "https://github.com/yxue301603/dsh-draft-history#readme",
+  "homepage": "https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-draft-history",
   "bugs": {
-    "url": "https://github.com/yxue301603/dsh-draft-history/issues"
+    "url": "https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose"
   },
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
-    "productivity"
+    "productivity",
+    "draft-recovery",
+    "autosave"
   ],
   "icon": "icon.svg",
   "dsh": {

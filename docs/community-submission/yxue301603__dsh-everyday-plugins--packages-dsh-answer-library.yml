@@ -1,0 +1,9 @@
+# Draft only. Not submitted to any external registry.
+url: https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-answer-library
+tarball: https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-answer-library-0.1.1.tgz
+name: yxue301603/dsh-everyday-plugins#dsh-answer-library
+icon: https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/icon.png
+category: memory
+description:
+  en: Save answers and selected excerpts with tags, search them, and insert them into the draft.
+  zh: 收藏回答与选文、添加标签、搜索，并插入草稿。

@@ -1,4 +1,4 @@
-/* dsh-conversation-outline v0.1.0 · MIT */
+/* dsh-conversation-outline v0.1.1 · MIT */
 window.__ModuleLoader__.load({id:"dsh-conversation-outline",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -46,6 +46,7 @@ var styles_default = `
 [data-composer-card] div:has(> [data-slot="conversation.input.left"] > .ed-launch){flex-wrap:wrap;min-width:0;max-width:100%;flex:1 1 auto}
 .ed-launch{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:28px;height:28px;border:0;border-radius:7px;padding:3px 6px;background:transparent;color:var(--dsw-alias-label-secondary,#475569);font:12px/20px system-ui;cursor:pointer;white-space:nowrap}
 .ed-launch:hover{background:var(--dsw-alias-interactive-bg-hover,#e2e8f0);color:var(--dsw-alias-label-primary,#172033)}
+@container(min-width:900px){.ed-launch .ed-launch-label{display:inline}}
 .ed-glyph{font-size:16px;line-height:1}.ed-launch-label{display:none}.ed-launch .ed-badge{border:0;background:var(--dsw-alias-button-primary-fill,#172033);color:var(--dsw-alias-label-primary-foreground,#fff);border-radius:8px;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
 .ed-dialog{--ed-bg:var(--dsw-alias-bg-layer-1,#fff);--ed-soft:var(--dsw-alias-bg-layer-2,#f5f7fa);--ed-text:var(--dsw-alias-label-primary,#172033);--ed-muted:var(--dsw-alias-label-secondary,#475569);--ed-line:var(--dsw-alias-border-l3,#d6dee8);--ed-accent:var(--dsw-alias-state-business-primary,#315fbe);box-sizing:border-box;margin:auto;width:min(760px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--ed-line);border-radius:18px;background:var(--ed-bg);color:var(--ed-text);font:13px/1.6 system-ui,sans-serif;box-shadow:0 24px 100px #0005;overflow:hidden}
 .ed-dialog::backdrop{background:#0b132650;backdrop-filter:blur(2px)}
@@ -116,7 +117,7 @@ var Boundary = class extends import_react.default.Component {
   }
 };
 function registerTool(ctx, spec) {
-  const { id, title, icon, Panel, Observer, Badge, order = 50 } = spec;
+  const { id, title, shortTitle = title, icon, Panel, Observer, Badge, order = 50 } = spec;
   function Launcher(props) {
     const t = useLocale(ctx);
     const [open, setOpen] = (0, import_react.useState)(false);
@@ -149,7 +150,7 @@ function registerTool(ctx, spec) {
     (0, import_react.useEffect)(() => {
       setOpen(false);
     }, [props.sessionId]);
-    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label" }, t(...title).split("与")[0]), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
+    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label", "aria-hidden": "true" }, t(...shortTitle)), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
       event.preventDefault();
       close();
     }, onClick: (event) => {
@@ -374,7 +375,7 @@ function apply(ctx) {
     }
     return /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t("只看自己提过的问题，快速回到上下文。", "Find your questions and return to their context.")), mark && /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy, onClick: () => jump(mark) }, t("继续上次阅读", "Resume reading"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ed-field" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-label" }, t("搜索提问", "Search questions")), /* @__PURE__ */ import_react2.default.createElement("input", { autoFocus: true, value: query, onChange: (event) => setQuery(event.target.value), placeholder: t("输入关键词，空格分隔可同时匹配", "Keywords; separate with spaces to match all") })), (error || notice) && /* @__PURE__ */ import_react2.default.createElement(Notice, null, notice || t("阅读位置暂时无法保存。", "Reading positions could not be saved.")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between" } }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, filtered.length, " / ", items.length, " ", t("条已加载提问", "loaded questions")), /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy || session?.hasMore === false || session?.loadingOlder, onClick: loadOlder }, busy ? t("处理中…", "Working…") : t("加载更早消息", "Load earlier"))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-list" }, filtered.length === 0 ? /* @__PURE__ */ import_react2.default.createElement(Empty, null, query ? t("没有匹配的提问，可尝试加载更早消息。", "No matching questions. Try loading earlier messages.") : t("当前还没有已加载的提问。", "No questions loaded in this chat yet.")) : filtered.map((item, index) => /* @__PURE__ */ import_react2.default.createElement("button", { className: "ed-card", type: "button", key: item.key, disabled: busy, onClick: () => jump(item), style: { width: "100%", textAlign: "start", cursor: "pointer", background: "var(--ed-bg)", color: "var(--ed-text)" } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between", marginTop: 0 } }, /* @__PURE__ */ import_react2.default.createElement("strong", null, t("提问", "Question"), " ", items.indexOf(item) + 1, item.steering ? t(" · 补充", " · Follow-up") : ""), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, item.time ? new Date(item.time).toLocaleString() : "")), /* @__PURE__ */ import_react2.default.createElement("p", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: "8px 0 0", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 4, overflow: "hidden" } }, item.text || t("图片或文件提问", "Image or file question"))))), /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("关键词搜索覆盖已加载的提问；不自动拉取整段历史，也不发送消息。阅读位置仅保存在当前设备。", "Search covers loaded questions. History is fetched only on request. Reading positions stay on this device.")));
   }
-  registerTool(ctx, { id: name, title: ["对话目录", "Chat outline"], icon: "☷", order: 20, Panel, Observer });
+  registerTool(ctx, { id: name, title: ["对话目录", "Chat outline"], shortTitle: ["目录", "Outline"], icon: "☷", order: 20, Panel, Observer });
   ctx.effect?.(() => () => marks.dispose());
 }
 

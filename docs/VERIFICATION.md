@@ -1,15 +1,38 @@
 # 验证说明
 
-本轮验证日期：2026-10-21。新增插件与总包版本为 **0.1.0**，已有快捷指令保持 **0.1.3**。
+## 2026-10-24–25 — 当前 0.1.1 验证
 
-## 环境与范围
+总包与七个新增插件为 **0.1.1**；既有快捷指令保持 **0.1.3**。本节是当前状态，下方 2026-10-21 的结果与哈希只对应历史 **0.1.0**，不作为本版通过凭据。
+
+| 检查 | 当前结果 | 范围 |
+| --- | --- | --- |
+| 模型与数据保护 | **41 / 41 通过** | 包含收藏全量 JSON/Markdown 备份、来源身份和 Markdown 边界 |
+| 浏览器契约 | **19 / 19 通过** | 含响应式工具入口、实际下载备份及筛选不遗漏收藏 |
+| 真实 DSH | **14 / 14 通过** | 真实合成会话、JSON 下载、选句收藏、深浅主题及宽窄输入区 |
+| 安装与打包 | **两种安装形式通过** | 总包，以及八个独立包；版本、启用清单、安装后客户端哈希、八个面板 |
+
+浏览器契约使用 `tests/fixture.mjs` 的**内存路由和合成宿主接口**，不启动真实 HTTP 服务，也不是一次真实 DSH 安装或集成验证。它与下面的真实 DSH 检查是不同层次。系统通知送达和系统文件管理器是否弹出仍不在后台自动化验证范围内。
+
+v0.1.1 Release 提供九个 `.tgz`（总包、八个插件）、`SHA256SUMS.txt` 和 `packages.json`。安装报告 `artifacts/install-results.json` 中两种形式均无页面或 console 错误、无模型调用和系统通知。安装验证后只更新总包中的本验证文档；发行前另逐文件核对，确认其他运行文件与已安装测试包一致。正式档案校验值以 [Release 清单](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/SHA256SUMS.txt) 为准。
+
+原生复验使用 Windows 上真实 DSH **0.2.1-rc.2**、隔离 profile 与后台 Chromium 149，浏览器通过 `localhost` 直连宿主；没有修改系统网络策略或使用者的应用。最终报告 `artifacts/native-result-0.1.1.json` 中模型调用、系统通知、页面错误、console 错误和失败请求均为 **0**。早期重试曾遇到本机 loopback 网络拒绝；这些失败保留在工作机报告中，不计为通过。
+
+实际输入区宽 952px 时七个短名称均显示；390px 视口时保留全部图标，无横向溢出。深浅主题启用控件与正文最低对比度分别为 **5.579:1 / 5.766:1**。原生收藏 JSON 下载在搜索无匹配时仍包含全部保存内容、标签和来源身份。最终客户端 SHA256：`24eba0e40c05827eeb57a5e3d55f5d439f94ad9130727bd2f755bb566c36c021`。
+
+**English:** The collection and seven newer tools are **0.1.1**; Quick prompts remains **0.1.3**. Model/data checks passed **41/41**, browser contracts **19/19**, and native checks **14/14**. Browser contracts use an in-memory synthetic host, not native HTTP integration. Native checks use real DSH **0.2.1-rc.2**, isolated synthetic sessions and background Chromium 149 over localhost. The final run recorded zero model calls, notifications, page/console errors and failed requests; earlier local network-denied runs remain recorded separately. Both suite and eight-tool standalone installations passed activation, client hashes and all panels. Only this verification document changed after installation testing; release package contents are compared separately to confirm unchanged runtime files. Release assets comprise nine `.tgz` archives plus `SHA256SUMS.txt` and `packages.json`. Historical results below apply only to **0.1.0**.
+
+## 2026-10-21 — 历史 0.1.0 验证
+
+当时新增插件与总包版本为 **0.1.0**，已有快捷指令为 **0.1.3**。以下保留当时的环境、结果及报告路径。
+
+### 环境与范围
 
 - Windows、Node.js 24.19.0；真实 DeepSeek Harness **0.2.1-rc.2** 桌面内置运行时，以独立的 Web profile 启动。
 - 浏览器自动化使用后台、无窗口的 Microsoft Edge；公开 CI 使用 Linux Chromium。
 - 原生测试使用随机 `.cache` 数据目录、合成工作区与合成会话；不会连接使用者的个人会话或读取凭据。测试从未调用模型。
 - Web 与桌面共享的原生插件、聊天、草稿及文件预览接口在真实运行时验证。操作系统通知、系统文件管理器和使用者正在工作的桌面窗口不参与自动化操作。
 
-## 分层检查
+### 分层检查
 
 | 层次 | 命令 | 覆盖 |
 | --- | --- | --- |
@@ -21,7 +44,7 @@
 
 真实 DSH 脚本需要本地安装的 DSH 桌面版及 Edge。可以用 `DSH_NATIVE_EXECUTABLE` 与 `DSH_NATIVE_BIN` 指定宿主可执行文件和其 CLI 路径；默认值是本轮 Windows 测试机路径。它们不属于普通插件安装步骤，也不在公开 CI 中假装执行。
 
-## 测试边界
+### 测试边界
 
 - 自动化仅向草稿插入内容，确认没有提交消息。真实宿主测试拦截并统计模型调用；系统通知替换为无操作实现。
 - 文件预览使用真实宿主侧栏；“打开所在目录”在契约测试中验证宿主授权请求参数，没有主动弹出系统文件管理器。
@@ -30,7 +53,7 @@
 - 390px 时检查面板边界及所有工具入口。共享样式只对带本套插件的原生输入工具组启用换行，不依赖构建后的 CSS 类名。
 - GitHub 下载依赖访问 GitHub 的网络链路。原生 tarball 安装验证、公开仓库内容验证和公开 CI 不能等同于每个用户网络中的 GitHub 下载成功。
 
-## 结果记录
+### 结果记录
 
 已通过 **38 项模型与数据保护检查、17 项浏览器场景、12 项真实 DSH 功能检查**。
 
@@ -46,13 +69,13 @@
 
 另用真实 DSH 安装器，从 **GitHub 来源**分别安装了总仓库及对话目录独立仓库；使用新的隔离 profile，均一次成功，版本、启用清单及已安装客户端 SHA256 与冻结构建一致。总包的 `private: true` 仅防止误发 npm，不影响 GitHub 安装。报告分别为 `artifacts/github-suite-install-result.json` 与 `artifacts/github-install-result.json`。其余六个新独立插件均已通过原生 tarball 安装和各自的公开 CI；没有将这些结果写成七个 GitHub 地址逐个安装的测试。
 
-已验证的总包客户端 SHA256：
+历史 **0.1.0** 总包客户端 SHA256（不是当前 0.1.1，也不是 `.tgz` 资产的校验值）：
 
 ```text
 f60e72b9b23e6ea2c19350a8258987a12768c038adf77802405477858d5d808a
 ```
 
-### 主仓库的子目录独立安装
+#### 主仓库的子目录独立安装
 
 按统一仓库导航的要求，另用新的隔离 profile 实测以下完整地址：
 

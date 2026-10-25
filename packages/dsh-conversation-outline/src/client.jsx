@@ -90,6 +90,6 @@ export function apply(ctx) {
       <p className="ed-muted">{t('关键词搜索覆盖已加载的提问；不自动拉取整段历史，也不发送消息。阅读位置仅保存在当前设备。', 'Search covers loaded questions. History is fetched only on request. Reading positions stay on this device.')}</p>
     </div>;
   }
-  registerTool(ctx, { id: name, title: ['对话目录', 'Chat outline'], icon: '☷', order: 20, Panel, Observer });
+  registerTool(ctx, { id: name, title: ['对话目录', 'Chat outline'], shortTitle: ['目录', 'Outline'], icon: '☷', order: 20, Panel, Observer });
   ctx.effect?.(() => () => marks.dispose());
 }

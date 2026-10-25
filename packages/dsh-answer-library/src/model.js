@@ -47,3 +47,29 @@ export function findAnswerNode(chat, source) {
     return source.messageId ? final.messageId === source.messageId : Number.isFinite(source.seq) && final.seq === source.seq;
   }) ?? null;
 }
+function backupDocument(data, at) {
+  const library = normalizeLibrary(data);
+  if (!library.items.length) throw new Error('Cannot export an empty library');
+  return { format: 'dsh-answer-library-backup', version: 1, exportedAt: new Date(at).toISOString(), items: library.items };
+}
+/** Exports the whole library, independent of any UI search or tag filter. */
+export function exportLibraryJson(data, at = Date.now()) {
+  return JSON.stringify(backupDocument(data, at), null, 2) + '\n';
+}
+function fenced(value, language) {
+  const runs = value.match(/`+/g) ?? [];
+  const fence = '`'.repeat(runs.reduce((length, run) => Math.max(length, run.length + 1), 3));
+  return `${fence}${language}\n${value}\n${fence}`;
+}
+function heading(value) {
+  return value.replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/[\\`*_{}[\]()#+.!|<>-]/g, '\\$&');
+}
+/** Literal text fences preserve excerpts without letting their Markdown escape into the backup. */
+export function exportLibraryMarkdown(data, at = Date.now()) {
+  const document = backupDocument(data, at);
+  const sections = document.items.map((item, index) => `## ${index + 1}. ${heading(item.title)}\n\n`
+    + `**标签 / Tags**\n\n${fenced(JSON.stringify(item.tags), 'json')}\n\n`
+    + `**正文 / Saved text**\n\n${fenced(item.text, 'text')}\n\n`
+    + `**来源 / Source metadata**\n\n${fenced(JSON.stringify({ id: item.id, sessionId: item.sessionId, messageId: item.messageId, seq: item.seq, turn: item.turn, createdAt: item.createdAt }, null, 2), 'json')}`);
+  return `# DSH Answer Library / 回答收藏\n\nExported: ${document.exportedAt}\n\nItems / 收藏数: ${document.items.length}\n\n${sections.join('\n\n---\n\n')}\n`;
+}

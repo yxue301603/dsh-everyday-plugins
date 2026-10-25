@@ -1,0 +1,9 @@
+# Draft only. Not submitted to any external registry.
+url: https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-conversation-outline
+tarball: https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-conversation-outline-0.1.1.tgz
+name: yxue301603/dsh-everyday-plugins#dsh-conversation-outline
+icon: https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/icon.png
+category: session
+description:
+  en: Search loaded user questions, jump to their messages, and return to a saved reading position.
+  zh: 搜索已加载的用户提问、跳转原消息，并返回保存的阅读位置。

@@ -1,4 +1,4 @@
-/* dsh-selection-actions v0.1.0 · MIT */
+/* dsh-selection-actions v0.1.1 · MIT */
 window.__ModuleLoader__.load({id:"dsh-selection-actions",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -46,6 +46,7 @@ var styles_default = `
 [data-composer-card] div:has(> [data-slot="conversation.input.left"] > .ed-launch){flex-wrap:wrap;min-width:0;max-width:100%;flex:1 1 auto}
 .ed-launch{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:28px;height:28px;border:0;border-radius:7px;padding:3px 6px;background:transparent;color:var(--dsw-alias-label-secondary,#475569);font:12px/20px system-ui;cursor:pointer;white-space:nowrap}
 .ed-launch:hover{background:var(--dsw-alias-interactive-bg-hover,#e2e8f0);color:var(--dsw-alias-label-primary,#172033)}
+@container(min-width:900px){.ed-launch .ed-launch-label{display:inline}}
 .ed-glyph{font-size:16px;line-height:1}.ed-launch-label{display:none}.ed-launch .ed-badge{border:0;background:var(--dsw-alias-button-primary-fill,#172033);color:var(--dsw-alias-label-primary-foreground,#fff);border-radius:8px;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
 .ed-dialog{--ed-bg:var(--dsw-alias-bg-layer-1,#fff);--ed-soft:var(--dsw-alias-bg-layer-2,#f5f7fa);--ed-text:var(--dsw-alias-label-primary,#172033);--ed-muted:var(--dsw-alias-label-secondary,#475569);--ed-line:var(--dsw-alias-border-l3,#d6dee8);--ed-accent:var(--dsw-alias-state-business-primary,#315fbe);box-sizing:border-box;margin:auto;width:min(760px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--ed-line);border-radius:18px;background:var(--ed-bg);color:var(--ed-text);font:13px/1.6 system-ui,sans-serif;box-shadow:0 24px 100px #0005;overflow:hidden}
 .ed-dialog::backdrop{background:#0b132650;backdrop-filter:blur(2px)}
@@ -97,7 +98,7 @@ var Boundary = class extends import_react.default.Component {
   }
 };
 function registerTool(ctx, spec) {
-  const { id, title, icon, Panel, Observer, Badge, order = 50 } = spec;
+  const { id, title, shortTitle = title, icon, Panel, Observer, Badge, order = 50 } = spec;
   function Launcher(props) {
     const t = useLocale(ctx);
     const [open, setOpen] = (0, import_react.useState)(false);
@@ -130,7 +131,7 @@ function registerTool(ctx, spec) {
     (0, import_react.useEffect)(() => {
       setOpen(false);
     }, [props.sessionId]);
-    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label" }, t(...title).split("与")[0]), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
+    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label", "aria-hidden": "true" }, t(...shortTitle)), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
       event.preventDefault();
       close();
     }, onClick: (event) => {
@@ -246,7 +247,8 @@ function apply(ctx) {
           if (next) {
             publish(sessionId, next);
             const rect = next.range.getBoundingClientRect();
-            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, rect.bottom + 8)) });
+            const top = rect.top >= 56 ? rect.top - 44 : rect.bottom + 8;
+            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, top)) });
           } else setPoint(null);
         }, 80);
       };
@@ -317,7 +319,7 @@ function apply(ctx) {
       setError("");
     } }, label))), action === "ask" ? /* @__PURE__ */ import_react2.default.createElement("label", { className: "ed-field" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-label" }, t("想追问什么？", "Your follow-up question")), /* @__PURE__ */ import_react2.default.createElement("textarea", { autoFocus: true, rows: 3, value: question, onChange: (event) => setQuestion(event.target.value), placeholder: t("例如：这里为什么这样设计？给我一个具体例子。", "For example: Why is this designed this way? Show a concrete example.") })) : action === "translate" ? /* @__PURE__ */ import_react2.default.createElement("label", { className: "ed-field" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-label" }, t("目标语言", "Target language")), /* @__PURE__ */ import_react2.default.createElement("input", { value: language, maxLength: 80, onChange: (event) => setLanguage(event.target.value) })) : /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("解释关键概念、适用前提，并给出例子。", "Explain key concepts, relevant assumptions, and examples.")), error && /* @__PURE__ */ import_react2.default.createElement(Notice, null, error), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between" } }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t("不会自动发送，也不会覆盖已有草稿。", "Does not send automatically or overwrite your draft.")), /* @__PURE__ */ import_react2.default.createElement(Button, { primary: true, disabled: capture.tooLong || action === "ask" && !question.trim(), onClick: insert }, t("填入草稿", "Insert into draft"))));
   }
-  registerTool(ctx, { id: name, title: ["选中追问", "Selection actions"], icon: "↗", order: 80, Observer, Panel });
+  registerTool(ctx, { id: name, title: ["选中追问", "Selection actions"], shortTitle: ["选文", "Quote"], icon: "↗", order: 80, Observer, Panel });
   ctx.effect?.(() => () => {
     captures.clear();
     listeners.clear();

@@ -1,6 +1,6 @@
 {
   "name": "dsh-answer-library",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：保存回答与摘录，按标签检索，复制或插入草稿。",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "lib/client.js",
     "cordis.patch.yml",
     "icon.svg",
+    "screenshots.json",
     "README.md",
     "README.en.md",
     "LICENSE"
@@ -33,14 +34,17 @@
     "type": "git",
     "url": "git+https://github.com/yxue301603/dsh-answer-library.git"
   },
-  "homepage": "https://github.com/yxue301603/dsh-answer-library#readme",
+  "homepage": "https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-answer-library",
   "bugs": {
-    "url": "https://github.com/yxue301603/dsh-answer-library/issues"
+    "url": "https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose"
   },
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
-    "productivity"
+    "productivity",
+    "bookmarks",
+    "markdown",
+    "local-backup"
   ],
   "icon": "icon.svg",
   "dsh": {

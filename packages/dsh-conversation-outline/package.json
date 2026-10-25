@@ -1,6 +1,6 @@
 {
   "name": "dsh-conversation-outline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：搜索用户提问，跳转原文并保存阅读位置。",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "lib/client.js",
     "cordis.patch.yml",
     "icon.svg",
+    "screenshots.json",
     "README.md",
     "README.en.md",
     "LICENSE"
@@ -33,14 +34,16 @@
     "type": "git",
     "url": "git+https://github.com/yxue301603/dsh-conversation-outline.git"
   },
-  "homepage": "https://github.com/yxue301603/dsh-conversation-outline#readme",
+  "homepage": "https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-conversation-outline",
   "bugs": {
-    "url": "https://github.com/yxue301603/dsh-conversation-outline/issues"
+    "url": "https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose"
   },
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
-    "productivity"
+    "productivity",
+    "chat-history",
+    "navigation"
   ],
   "icon": "icon.svg",
   "dsh": {

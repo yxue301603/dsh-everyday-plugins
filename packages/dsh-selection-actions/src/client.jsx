@@ -34,7 +34,9 @@ export function apply(ctx) {
           if (next) {
             publish(sessionId, next);
             const rect = next.range.getBoundingClientRect();
-            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, rect.bottom + 8)) });
+            // Prefer the space above the quote, leaving its answer actions clickable.
+            const top = rect.top >= 56 ? rect.top - 44 : rect.bottom + 8;
+            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, top)) });
           } else setPoint(null);
         }, 80);
       };
@@ -90,6 +92,6 @@ export function apply(ctx) {
       <div className="ed-actions" style={{ justifyContent: 'space-between' }}><span className="ed-muted">{t('不会自动发送，也不会覆盖已有草稿。', 'Does not send automatically or overwrite your draft.')}</span><Button primary disabled={capture.tooLong || action === 'ask' && !question.trim()} onClick={insert}>{t('填入草稿', 'Insert into draft')}</Button></div>
     </div>;
   }
-  registerTool(ctx, { id: name, title: ['选中追问', 'Selection actions'], icon: '↗', order: 80, Observer, Panel });
+  registerTool(ctx, { id: name, title: ['选中追问', 'Selection actions'], shortTitle: ['选文', 'Quote'], icon: '↗', order: 80, Observer, Panel });
   ctx.effect?.(() => () => { captures.clear(); listeners.clear(); });
 }

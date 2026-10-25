@@ -1,5 +1,13 @@
 # Answer library
 
+> An individual tool from [DSH Everyday](https://github.com/yxue301603/dsh-everyday-plugins) · [All demos](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/GALLERY.md) · [Shared issue tracker](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+
+**Keep useful commands, explanations and excerpts. Add tags, search, reuse, and back up the whole library.**
+
+![回答收藏 / Answer library](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/dsh-answer-library-dark.png)
+
+Actual plugin components, isolated test host, synthetic content.
+
 A local personal library for DeepSeek Harness. Keep useful answers, commands and excerpts, then find and reuse them later.
 
 - Use `☆` under a native answer to save it. Select text within that answer first to save only the excerpt.
@@ -15,7 +23,13 @@ Supports English, Chinese, and native dark/light themes. No API key, model calls
 In DSH, open **Plugins → Add plugin** and paste:
 
 ```text
-https://github.com/yxue301603/dsh-answer-library
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-answer-library
 ```
 
 Enable the plugin and reload as requested. Prebuilt files are included; no build step is required. Requires **DSH 0.2.1-rc.2 or a compatible 0.2.x version**. See the [collection installation guide](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md#english-quick-guide) for migration and upgrades.
+
+## Feedback and releases
+
+Use the [shared issue tracker](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose) and select this tool. [Pinned downloads and checksums](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [Contributing](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/CONTRIBUTING.md). The same-name standalone repository remains a compatibility source.
+
+Version 0.1.1 exports all entries as JSON or Markdown, independent of active search and tag filters. Export is disabled for empty or unreadable storage. Downloads are explicit; importing is not supported in this release.

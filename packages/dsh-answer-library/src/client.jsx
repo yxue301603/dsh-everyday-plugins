@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { registerTool, useLocale, Button, Empty, Notice, useExternalStore } from '../shared/ui.jsx';
-import { createStore } from '../shared/storage.js';
+import { createStore, downloadText } from '../shared/storage.js';
 import { insertText, jumpTo, selectedChatText } from '../shared/native.js';
-import { answerForSelection, answersFrom, findAnswerNode, makeSaved, normalizeLibrary, selectSaved } from './model.js';
+import { answerForSelection, answersFrom, exportLibraryJson, exportLibraryMarkdown, findAnswerNode, makeSaved, normalizeLibrary, selectSaved } from './model.js';
 
 export const name = 'dsh-answer-library';
 export const inject = ['slots', 'locale', 'sessions', 'uiWorkspace', 'uiConversation'];
@@ -59,6 +59,16 @@ export function apply(ctx) {
     const tags = [...new Set(data.items.flatMap(item => item.tags))].sort();
     async function attempt(operation) { setError(''); setMessage(''); try { await operation(); } catch (caught) { setError(t('操作未完成。请检查存储权限或稍后重试。', 'Could not finish. Check storage permissions or try again.')); } }
     function capture(text, answer) { return attempt(() => { const duplicate = save(text, answer ? { ...answer, sessionId: props.sessionId } : {}); setMessage(duplicate ? t('此内容已经收藏', 'This content is already saved') : t('已加入收藏', 'Added to library')); }); }
+    function exportAll(markdown = false) {
+      return attempt(() => {
+        const snapshot = store.getSnapshot();
+        if (snapshot.error || !snapshot.data.items.length) throw new Error('Library is empty or unreadable');
+        const at = Date.now();
+        const content = markdown ? exportLibraryMarkdown(snapshot.data, at) : exportLibraryJson(snapshot.data, at);
+        downloadText(content, `dsh-answer-library-${new Date(at).toISOString().slice(0, 10)}.${markdown ? 'md' : 'json'}`, markdown ? 'text/markdown;charset=utf-8' : 'application/json;charset=utf-8');
+        setMessage(t(`已开始导出全部 ${snapshot.data.items.length} 条收藏`, `Exporting all ${snapshot.data.items.length} saved answers`));
+      });
+    }
     async function source(item) {
       if (!ctx.sessions.list.getSnapshot().byId[item.sessionId]) throw new Error('unavailable');
       if (item.seq !== null && item.turn !== null) {
@@ -76,11 +86,12 @@ export function apply(ctx) {
       {(storageError || error) && <Notice>{error || t('本地存储无法读取，暂时不能保存。', 'Local storage is unavailable; saving is disabled.')}</Notice>}
       {message && <Notice>{message}</Notice>}
       <div className="ed-row"><input aria-label={t('搜索收藏', 'Search saved answers')} placeholder={t('搜索内容、标题或标签…', 'Search content, title or tags…')} value={query} onChange={e => setQuery(e.target.value)} /><select aria-label={t('标签筛选', 'Filter by tag')} value={tag} onChange={e => setTag(e.target.value)}><option value="">{t('全部标签', 'All tags')}</option>{tags.map(value => <option key={value}>{value}</option>)}</select></div>
+      <div className="ed-row"><Button disabled={!!storageError || !data.items.length} onClick={() => exportAll()}>{t('导出全部 JSON', 'Export all JSON')}</Button><Button disabled={!!storageError || !data.items.length} onClick={() => exportAll(true)}>{t('导出全部 Markdown', 'Export all Markdown')}</Button><span className="ed-muted">{t('备份全部收藏，不受搜索或标签筛选影响；暂不支持导入。', 'Backs up every saved answer, regardless of filters. Import is not supported yet.')}</span></div>
       <div className="ed-row"><Button disabled={!selection.current} onClick={() => capture(selection.current.text, answerForSelection(currentAnswers, selection.current, ctx.uiConversation.binding(props.sessionId).target('chat').getSnapshot()))}>{t('收藏选中文字', 'Save selected text')}</Button><span className="ed-muted">{t('也可点击回答下方的 ☆', 'Or use ☆ below any answer')}</span></div>
       <details><summary>{t('从当前会话收藏', 'Save from this conversation')} ({currentAnswers.length})</summary><div className="ed-stack">{currentAnswers.slice(0, 30).map(answer => <div className="ed-card" key={answer.seq}><p style={{ whiteSpace: 'pre-wrap', maxHeight: 110, overflow: 'auto' }}>{answer.text.slice(0, 1800)}</p><Button onClick={() => capture(answer.text, answer)}>{t('收藏回答', 'Save answer')}</Button></div>)}{!currentAnswers.length && <Empty>{t('此会话还没有可收藏的回答。', 'No answers in the loaded conversation yet.')}</Empty>}</div></details>
       {editing && <form className="ed-card ed-stack" onSubmit={event => { event.preventDefault(); attempt(() => { store.update(value => ({ ...value, items: value.items.map(item => item.id === editing.id ? { ...editing, title: editing.title.trim() || t('未命名收藏', 'Untitled'), tags: editing.tagText.split(/[,，]/).map(tag => tag.trim()).filter(Boolean).slice(0, 20) } : item) })); setEditing(null); }); }}><label>{t('标题', 'Title')}<input required maxLength={120} value={editing.title} onChange={event => setEditing({ ...editing, title: event.target.value })} /></label><label>{t('标签（逗号分隔）', 'Tags (comma separated)')}<input maxLength={600} value={editing.tagText} onChange={event => setEditing({ ...editing, tagText: event.target.value })} /></label><label>{t('摘录内容', 'Saved text')}<textarea required rows={7} maxLength={200000} value={editing.text} onChange={event => setEditing({ ...editing, text: event.target.value })} /></label><div className="ed-row"><Button primary type="submit">{t('保存', 'Save')}</Button><Button onClick={() => setEditing(null)}>{t('取消', 'Cancel')}</Button></div></form>}
       <div className="ed-stack">{selectSaved(data.items, query, tag).map(item => <article className="ed-card ed-stack" key={item.id}><div><strong>{item.title}</strong><div className="ed-muted">{item.tags.map(tag => `#${tag}`).join(' ')} · {new Date(item.createdAt).toLocaleDateString()}</div></div><pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 180, overflow: 'auto', margin: 0, fontFamily: 'inherit' }}>{item.text}</pre><div className="ed-row"><Button onClick={() => attempt(async () => { await navigator.clipboard.writeText(item.text); setMessage(t('已复制', 'Copied')); })}>{t('复制', 'Copy')}</Button><Button primary onClick={() => attempt(() => { insertText(props.inputActions, item.text, insertion.current); props.close(); })}>{t('插入草稿', 'Insert into draft')}</Button><Button onClick={() => setEditing({ ...item, tagText: item.tags.join(', ') })}>{t('编辑与标签', 'Edit & tag')}</Button>{item.sessionId && <Button onClick={() => attempt(() => source(item))}>{t('原会话', 'Source chat')}</Button>}<Button danger onClick={() => setDeleting(item.id)}>{t('删除', 'Delete')}</Button></div>{deleting === item.id && <div className="ed-row"><span>{t('删除此收藏？', 'Delete this saved answer?')}</span><Button danger onClick={() => attempt(() => { store.update(value => ({ ...value, items: value.items.filter(answer => answer.id !== item.id) })); setDeleting(null); })}>{t('确认删除', 'Delete permanently')}</Button><Button onClick={() => setDeleting(null)}>{t('取消', 'Cancel')}</Button></div>}</article>)}{!selectSaved(data.items, query, tag).length && <Empty>{t('这里还没有匹配的收藏。先留下一个有用的回答吧。', 'No matching saved answers. Save something useful to get started.')}</Empty>}</div>
     </div>;
   }
-  registerTool(ctx, { id: name, title: ['回答收藏', 'Answer library'], icon: '☆', order: 30, Panel });
+  registerTool(ctx, { id: name, title: ['回答收藏', 'Answer library'], shortTitle: ['收藏', 'Saved'], icon: '☆', order: 30, Panel });
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { answerForSelection, answersFrom, findAnswerNode, makeSaved, normalizeLibrary, selectSaved } from './model.js';
+import { answerForSelection, answersFrom, exportLibraryJson, exportLibraryMarkdown, findAnswerNode, makeSaved, normalizeLibrary, selectSaved } from './model.js';
 
 test('answers contain durable visible text, without private reasoning or tool payloads', () => {
   const answers = answersFrom([{ event: { type: 'assistant/message', seq: 9, time: 100, data: { turn: 2, message: { id: 'message', content: [{ type: 'text', text: 'Useful answer' }, { type: 'reasoning', text: 'Private reasoning' }, { type: 'tool_call', text: 'Tool args' }] } } } }, { event: { type: 'assistant/live-chunk', data: {} } }]);
@@ -41,4 +41,38 @@ test('search combines words across title, body and tags with an exact tag filter
 test('invalid local documents are rejected rather than silently overwriting saved data', () => {
   assert.throws(() => normalizeLibrary({ version: 0, items: [] })); assert.throws(() => normalizeLibrary({ version: 1, items: [{ id: 1 }] }));
   const data = normalizeLibrary({ version: 1, items: [{ ...makeSaved('Text'), tags: ['a', 1, 'b'] }] }); assert.deepEqual(data.items[0].tags, ['a', 'b']);
+});
+test('JSON backups preserve all entries, Unicode, tags and native source identities', () => {
+  const items = [
+    { ...makeSaved('中文 "quoted"\nline \\ path 😊', { sessionId: 'private/session', sessionMessageId: 'message-1', seq: 12, turn: 3 }), tags: ['代码', 'a,b', '[]<>'], title: 'One [title]' },
+    { ...makeSaved('Different hidden result', { sessionId: 'other-session', seq: 30, turn: 5 }), tags: ['other'] },
+  ];
+  const data = { version: 1, items };
+  const document = JSON.parse(exportLibraryJson(data, '2026-10-24T12:00:00Z'));
+  assert.equal(document.format, 'dsh-answer-library-backup'); assert.equal(document.version, 1); assert.equal(document.exportedAt, '2026-10-24T12:00:00.000Z');
+  assert.deepEqual(document.items, normalizeLibrary(data).items); assert.equal(document.items.length, 2);
+  assert.deepEqual(data.items, items);
+});
+test('Markdown backups keep literal excerpts inside fences and escape title boundaries', () => {
+  const text = 'Useful command\n```\n# Fake heading\n``````\n<img src="https://example.invalid/private">';
+  const item = { ...makeSaved(text, { sessionId: 'session-1', sessionMessageId: 'message-1', seq: 8, turn: 2 }), title: '[link](https://example.invalid)\n## Injected', tags: ['tag`value', '中文'] };
+  const document = exportLibraryMarkdown({ version: 1, items: [item, makeSaved('Second answer')] }, '2026-10-24T12:00:00Z');
+  assert.ok(document.includes(text)); assert.ok(document.includes(JSON.stringify(item.tags))); assert.ok(document.includes('"messageId": "message-1"'));
+  assert.ok(document.includes('Second answer')); assert.ok(!document.includes('https://github.com/session-1'));
+  let fence = ''; const outside = [];
+  for (const line of document.split('\n')) {
+    const marker = line.match(/^(`{3,})(?:\w+)?$/)?.[1];
+    if (!fence && marker) fence = marker;
+    else if (fence && marker === fence) fence = '';
+    else if (!fence) outside.push(line);
+  }
+  assert.equal(fence, '');
+  assert.equal(outside.filter(line => /^## /.test(line)).length, 2);
+  assert.ok(!outside.includes('# Fake heading')); assert.ok(!outside.includes('## Injected')); assert.ok(!outside.some(line => line.startsWith('<img')));
+});
+test('exports reject empty or invalid libraries rather than presenting an empty backup as success', () => {
+  for (const exportDocument of [exportLibraryJson, exportLibraryMarkdown]) {
+    assert.throws(() => exportDocument({ version: 1, items: [] }));
+    assert.throws(() => exportDocument({ version: 0, items: [] }));
+  }
 });

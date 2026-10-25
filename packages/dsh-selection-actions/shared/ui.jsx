@@ -24,7 +24,7 @@ class Boundary extends React.Component {
 
 /** One native compact launcher per installed plugin. No extension claims a singleton host slot. */
 export function registerTool(ctx, spec) {
-  const { id, title, icon, Panel, Observer, Badge, order = 50 } = spec;
+  const { id, title, shortTitle = title, icon, Panel, Observer, Badge, order = 50 } = spec;
   function Launcher(props) {
     const t = useLocale(ctx);
     const [open, setOpen] = useState(false);
@@ -48,7 +48,7 @@ export function registerTool(ctx, spec) {
     useEffect(() => { setOpen(false); }, [props.sessionId]);
     return <Boundary>
       {Observer && <Observer {...props} ctx={ctx} openPanel={openPanel} />}
-      <button type="button" ref={trigger} className="ed-launch" data-everyday-launch={id} title={t(...title)} aria-label={t(...title)} onPointerDown={event => event.preventDefault()} onClick={openPanel}><span aria-hidden="true" className="ed-glyph">{icon}</span><span className="ed-launch-label">{t(...title).split('与')[0]}</span>{Badge && <Badge ctx={ctx} />}</button>
+      <button type="button" ref={trigger} className="ed-launch" data-everyday-launch={id} title={t(...title)} aria-label={t(...title)} onPointerDown={event => event.preventDefault()} onClick={openPanel}><span aria-hidden="true" className="ed-glyph">{icon}</span><span className="ed-launch-label" aria-hidden="true">{t(...shortTitle)}</span>{Badge && <Badge ctx={ctx} />}</button>
       {open && <dialog ref={dialog} className="ed-dialog" data-everyday-plugin={id} aria-label={t(...title)} onCancel={event => { event.preventDefault(); close(); }} onClick={event => {
         if (event.target !== dialog.current) return;
         const rect = event.target.getBoundingClientRect();

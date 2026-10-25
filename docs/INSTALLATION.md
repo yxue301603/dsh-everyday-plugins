@@ -36,9 +36,33 @@ https://github.com/yxue301603/dsh-everyday-plugins
 | 项目便笺 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes` |
 | 选文操作 | `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-selection-actions` |
 
-每个子目录都自带构建产物和必要共享代码，只安装选中的插件，不安装整套工具箱。该语法由原生安装器使用的 [pnpm Git 子目录来源](https://pnpm.io/package-sources#install-from-a-subdirectory-of-a-git-repository)提供；本轮已用真实 DSH 从项目便笺子目录安装，验证版本、自动启用和客户端哈希。
+每个子目录都自带构建产物和必要共享代码，只安装选中的插件，不安装整套工具箱。该语法由原生安装器使用的 [pnpm Git 子目录来源](https://pnpm.io/package-sources#install-from-a-subdirectory-of-a-git-repository)提供；2026-10-21 的 **0.1.0** 验证已用真实 DSH 从项目便笺子目录安装，核对版本、自动启用和客户端哈希。当前版本的验证状态见[验证说明](VERIFICATION.md)。
 
 兼容之前发布的地址时，也可以继续使用 `https://github.com/yxue301603/插件名`，例如 `https://github.com/yxue301603/dsh-project-notes`。这些独立仓库保留为兼容入口；统一导航以总仓库为准。两个来源提供同一插件，任选一个安装即可。
+
+## 固定版本：Release 安装包
+
+普通仓库地址跟随默认分支；需要明确固定版本时，使用 [v0.1.1 Release](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) 中的预构建 `.tgz`。发布资产包括总包、八个单插件包，以及 [SHA256SUMS.txt](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/SHA256SUMS.txt) 和 [packages.json](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/packages.json)；实际可下载文件以 Release 页面为准。总包与七个新增插件为 **0.1.1**，快捷指令仍为 **0.1.3**。
+
+在「插件 → 添加插件」中填写具体资产地址，例如整套：
+
+```text
+https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-everyday-plugins-0.1.1.tgz
+```
+
+只安装回答收藏的固定版本：
+
+```text
+https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-answer-library-0.1.1.tgz
+```
+
+也可先从 Release 下载所需 `.tgz` 和 `SHA256SUMS.txt`，核对同名文件的 SHA256，再在「添加插件」中填写下载文件的**本地绝对路径**，例如 `C:\Downloads\dsh-answer-library-0.1.1.tgz`。Windows 可运行：
+
+```powershell
+Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.1.tgz'
+```
+
+macOS/Linux 可运行 `shasum -a 256 dsh-answer-library-0.1.1.tgz`。将结果与清单中该文件的完整哈希逐字核对（十六进制大小写不影响结果）；不一致时重新下载，不使用该文件。`packages.json` 提供包名、版本与资产对应关系。此处使用固定版本的 `.tgz`，不依赖未验证的 Git tag 与子目录组合语法。
 
 ## 已装快捷指令，如何换成整套
 
@@ -49,7 +73,7 @@ https://github.com/yxue301603/dsh-everyday-plugins
 
 独立版与总包使用相同的数据键，快捷指令仍使用 `dsh.quick-prompts.v1`；其他日常插件沿用各自的 `dsh.everyday.*` 键。在同一个 DSH 浏览器来源中，切换包形式不会主动迁移、清空或重置这些记录。
 
-这不等于跨来源同步。如果更换端口、协议、浏览器配置或设备后形成不同的浏览器来源，旧数据可能不可见。快捷指令可通过 JSON 导出/导入；便笺可导出 Markdown，重要草稿或收藏可先复制保留。保留哪些内容、容量上限及失败恢复方式，见对应插件 README。
+这不等于跨来源同步。如果更换端口、协议、浏览器配置或设备后形成不同的浏览器来源，旧数据可能不可见。快捷指令可通过 JSON 导出/导入；便笺可导出 Markdown；回答收藏可主动导出**全部 JSON 或 Markdown**，不受搜索或标签筛选影响，当前尚不支持导入。重要草稿可先复制保留。保留哪些内容、容量上限及失败恢复方式，见对应插件 README。
 
 从整套切回独立安装时顺序相同：先卸载总包，再装需要的独立插件，避免重复。
 
@@ -86,6 +110,8 @@ dsh plugin --profile web add 'https://github.com/yxue301603/dsh-everyday-plugins
 5. 有交付或文件改动时打开「本轮文件」。没有记录时显示空列表属于正常情况。
 6. 「任务提醒」默认只记录站内提醒。需要系统通知时，再明确点击「开启系统通知」并接受宿主权限提示。
 
+回答收藏面板中的「导出全部 JSON / Markdown」可备份全部收藏及来源信息；空库或存储读取失败时不会提供空备份。导出的 JSON 是备份格式，当前没有一键导入入口。
+
 DSH 必须保持运行和连接才能接收实时提醒。系统通知默认静音，前台时抑制；宿主未提供明确结束原因时只显示「已结束，请查看结果」。插件不会发送外部推送，也不会读取历史后补发大量旧提醒。
 
 ## 常见情况
@@ -109,12 +135,17 @@ Choose **one** installation style:
 
 - Collection: paste `https://github.com/yxue301603/dsh-everyday-plugins` into **Plugins → Add plugin**.
 - Individual tools: paste a `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/plugin-name` URL from the table above. Each package works without the collection. Same-name standalone repositories remain compatibility sources.
+- Fixed version: use a prebuilt `.tgz` from [Release v0.1.1](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1). The collection and seven newer tools are **0.1.1**; Quick prompts remains **0.1.3**. The release includes nine package archives, `SHA256SUMS.txt` and `packages.json`; available assets are listed on the release page.
+
+For a fixed collection install, paste `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-everyday-plugins-0.1.1.tgz`. For Answer library, use `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-answer-library-0.1.1.tgz`. Alternatively, download the archive and checksum list, compare its full SHA256 using Windows `Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.1.tgz'` or macOS/Linux `shasum -a 256 dsh-answer-library-0.1.1.tgz`, then enter the archive's absolute local path in Add plugin. Hexadecimal letter case does not matter. Redownload a mismatching file. `packages.json` maps package names, versions and assets. These instructions do not assume an untested Git tag/subdirectory combination.
 
 Install, enable and reload when the host requests it. Never run the collection alongside duplicate standalone tools. On Desktop use the desktop application's own plugin manager; the Web CLI profile does not install into your Desktop profile.
 
 For Web CLI, use `dsh plugin --profile web add github:yxue301603/dsh-everyday-plugins` for the suite. For one tool, use the full subdirectory URL from the table as a single quoted argument. GitHub must be reachable; an npm mirror does not proxy GitHub. A downloaded, prebuilt package directory can also be added using its absolute local path.
 
 To switch from standalone Quick prompts, export important prompts, uninstall the standalone copy, install the collection, then reload. The original `dsh.quick-prompts.v1` key is reused on the same DSH browser origin. Other tools also retain their own keys. Preserve site data. Different devices, profiles with different browser storage, or origins do not synchronize automatically.
+
+Answer library can export **all** saved entries as JSON or Markdown, including tags and source identity, regardless of search or tag filters. Empty or unreadable libraries cannot be exported. There is no import feature yet. Quick prompts supports JSON export/import, Project notes exports Markdown, and important drafts can be copied before migration.
 
 For updates, use the host's upgrade action when available. Otherwise back up important text, uninstall the old package and install the same GitHub source again. Do not clear site data.
 

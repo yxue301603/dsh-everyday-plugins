@@ -1,16 +1,39 @@
 import { test, expect } from '@playwright/test';
 import { plugins } from '../../catalog.mjs';
+import { createFixtureResponder } from '../fixture.mjs';
+const fixture = await createFixtureResponder();
 const current = page => page.locator('dialog[open]');
 const open = (page, id) => page.locator(`[data-everyday-launch="${id}"]`).click();
 const close = page => page.keyboard.press('Escape');
 const failures = new WeakMap();
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, context }) => {
   const errors = []; failures.set(page, errors); page.on('pageerror', error => errors.push(error.message));
+  // Contract tests intentionally use synthetic APIs and never need a network.
+  // Native integration is exercised separately by scripts/test-native.mjs.
+  await context.route('http://127.0.0.1:43279/**', async route => {
+    const response = await fixture(route.request().url()); await route.fulfill(response);
+  });
   await page.goto('/'); await expect(page.locator('.ed-launch')).toHaveCount(7);
 });
 test.afterEach(async ({ page }) => {
   expect(failures.get(page)).toEqual([]);
   expect(await page.evaluate(() => window.__test.snapshot().submitted)).toBe(0);
+});
+
+test('tool names respond to composer width rather than the desktop viewport', async ({ page }) => {
+  await page.locator('.host-stage').evaluate(element => element.style.setProperty('--dsh-composer-card-max-width', '1040px'));
+  for (const label of await page.locator('.ed-launch-label').all()) await expect(label).toBeVisible();
+  await page.evaluate(() => window.__test.setLanguage('en'));
+  await expect(page.locator('[data-everyday-launch="dsh-answer-library"] .ed-launch-label')).toHaveText('Saved');
+  await expect(page.getByRole('button', { name: 'Answer library', exact: true })).toBeVisible();
+  await page.locator('.host-composer').evaluate(element => { element.style.width = '470px'; });
+  for (const label of await page.locator('.ed-launch-label').all()) await expect(label).toBeHidden();
+  await page.locator('.host-composer').evaluate(element => { element.style.width = '100%'; });
+  await page.setViewportSize({ width: 390, height: 900 });
+  for (const label of await page.locator('.ed-launch-label').all()) await expect(label).toBeHidden();
+  for (const button of await page.locator('.ed-launch').all()) {
+    const box = await button.boundingBox(); expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(391);
+  }
 });
 
 test('all tools coexist, focus restores, and every modal stays within light and dark narrow viewports', async ({ page }) => {
@@ -150,4 +173,40 @@ test('English rendering, cross-tab notes, corruption protection and unloading re
 for (const plugin of plugins.filter(item => !item.existing)) test(`${plugin.name} loads independently without the collection`, async ({ page }) => {
   await page.goto(`/?plugin=${plugin.name}`); await expect(page.locator('.ed-launch')).toHaveCount(1);
   await open(page, plugin.name); await expect(current(page)).toBeVisible();
+});
+
+test('answer library downloads every saved entry despite search and tag filters, and refuses empty or unreadable backups', async ({ page }) => {
+  await open(page, 'dsh-answer-library');
+  await expect(current(page).getByRole('button', { name: '导出全部 JSON', exact: true })).toBeDisabled();
+  await expect(current(page).getByRole('button', { name: '导出全部 Markdown', exact: true })).toBeDisabled();
+  await close(page);
+  const items = [
+    { id: 'backup-1', title: 'Needle example', text: '需要保留的 "引用"\n正文 `code` 😊', tags: ['selected', '中文'], sessionId: 'test', messageId: 'message-1', seq: 3, turn: 1, createdAt: 100 },
+    { id: 'backup-2', title: 'Hidden by both filters', text: 'Second saved body\n```\n# literal heading', tags: ['other'], sessionId: 'other', messageId: 'message-2', seq: 12, turn: 2, createdAt: 200 },
+  ];
+  await page.evaluate(items => localStorage.setItem('dsh.everyday.answer-library.v1', JSON.stringify({ version: 1, items })), items);
+  await page.reload(); await open(page, 'dsh-answer-library');
+  await current(page).getByRole('textbox', { name: '搜索收藏', exact: true }).fill('Needle');
+  await current(page).getByRole('combobox', { name: '标签筛选', exact: true }).selectOption('selected');
+  await expect(current(page).locator('article')).toHaveCount(1);
+  const [jsonDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    current(page).getByRole('button', { name: '导出全部 JSON', exact: true }).click(),
+  ]);
+  expect(jsonDownload.suggestedFilename()).toMatch(/^dsh-answer-library-\d{4}-\d{2}-\d{2}\.json$/);
+  const jsonChunks = []; for await (const chunk of await jsonDownload.createReadStream()) jsonChunks.push(chunk);
+  const backup = JSON.parse(Buffer.concat(jsonChunks).toString('utf8'));
+  expect(backup.format).toBe('dsh-answer-library-backup'); expect(backup.version).toBe(1); expect(Number.isNaN(Date.parse(backup.exportedAt))).toBe(false);
+  expect(backup.items).toEqual(items);
+  const [markdownDownload] = await Promise.all([
+    page.waitForEvent('download'),
+    current(page).getByRole('button', { name: '导出全部 Markdown', exact: true }).click(),
+  ]);
+  const markdownChunks = []; for await (const chunk of await markdownDownload.createReadStream()) markdownChunks.push(chunk);
+  const markdown = Buffer.concat(markdownChunks).toString('utf8');
+  expect(markdown).toContain(items[0].text); expect(markdown).toContain(items[1].text); expect(markdown).toContain('"messageId": "message-2"');
+  await close(page); await page.evaluate(() => localStorage.setItem('dsh.everyday.answer-library.v1', '{broken')); await page.reload();
+  await open(page, 'dsh-answer-library');
+  await expect(current(page).getByRole('button', { name: '导出全部 JSON', exact: true })).toBeDisabled();
+  await expect(current(page).getByRole('button', { name: '导出全部 Markdown', exact: true })).toBeDisabled();
 });

@@ -1,5 +1,13 @@
 # 完成与待确认提醒
 
+> [DSH Everyday 日常工具箱](https://github.com/yxue301603/dsh-everyday-plugins) 的独立插件 · [全部演示](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/GALLERY.md) · [统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+
+**切去忙别的，再回来集中看哪些会话完成、失败或在等你确认。**
+
+![任务提醒 / Task alerts](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/dsh-task-alerts-dark.png)
+
+实际插件组件，隔离测试宿主，合成内容。
+
 在 DeepSeek Harness 里集中记录任务完成、待确认、失败和停止状态，让你切换工作后更容易回来看结果。
 
 - 打开输入框旁的「任务提醒」，查看未读或按状态筛选，点击「前往会话」回到原会话。
@@ -18,7 +26,11 @@
 在 DSH 的「插件 → 添加插件」中粘贴：
 
 ```text
-https://github.com/yxue301603/dsh-task-alerts
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-task-alerts
 ```
 
 安装并启用后，按 DSH 提示重新加载。仓库已包含预构建文件，无需自行编译。需要 **DSH 0.2.1-rc.2 或兼容的 0.2.x 版本**。迁移、整套安装与升级说明见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
+
+## 反馈与版本
+
+安装或使用问题请到[工具箱统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)，选择本插件名称。[固定版本下载与校验](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [贡献指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/CONTRIBUTING.md)。同名独立仓库仍是兼容安装来源。

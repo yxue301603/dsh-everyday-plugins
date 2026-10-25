@@ -1,98 +1,80 @@
-# DSH 日常工具箱
+# DSH Everyday · 日常工具箱
 
-**把常用动作放近一点，把注意力留给正在做的事。**
+**找回误清空的草稿，收藏值得复用的回答，快速定位长对话。**
 
-8 个 DeepSeek Harness 原生插件：少打几次重复指令，找回写到一半的草稿，收藏好回答，记住项目下一步。可以整套安装，也可以只选你需要的功能。
+8 个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 原生插件，按需装一个，也可以整套安装。中文 / English · 深浅主题 · 本地保存 · MIT。
 
-[English](README.en.md) · [安装与升级](docs/INSTALLATION.md) · [开发计划](docs/PLAN.md) · MIT
+[English](README.en.md) · [八个插件与截图](docs/GALLERY.md) · [安装与升级](docs/INSTALLATION.md) · [下载固定版本](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
 
-[![自动检查](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
+[![Checks](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
+[![MIT](https://img.shields.io/badge/license-MIT-315fbe)](LICENSE)
+[![DSH tested](https://img.shields.io/badge/DSH%20tested-0.2.1--rc.2-315fbe)](docs/VERIFICATION.md)
 
-## 选你用得上的
+## 先看它能帮你什么
 
-| 插件目录 | 什么时候有用 | 使用入口 |
-| --- | --- | --- |
-| [常用指令快捷面板](packages/dsh-quick-prompts) | 一键填入「继续完成」「检查本次改动」；自定义、置顶、分类、模板变量与最近使用 | 输入框旁「快捷指令」，或置顶指令按钮 |
-| [对话目录](packages/dsh-conversation-outline) | 在长对话中搜索自己问过的问题，跳回上下文，继续上次阅读 | 输入框旁「对话目录」 |
-| [草稿历史](packages/dsh-draft-history) | 写坏了或误清空后，预览并恢复这个会话的旧草稿 | 输入框旁「草稿历史」 |
-| [回答收藏](packages/dsh-answer-library) | 留住有用的命令、解释和摘录，加标签后随时搜索、复制或放回草稿 | 回答下方 `☆`，或输入框旁「回答收藏」 |
-| [本轮文件](packages/dsh-turn-files) | 按轮次找交付文件与已记录的改动，复制路径、预览或定位所在目录 | 输入框旁「本轮文件」 |
-| [任务提醒](packages/dsh-task-alerts) | 集中查看完成、待确认与失败记录；需要时开启后台系统通知 | 输入框旁「任务提醒」及未读数量 |
-| [项目便笺](packages/dsh-project-notes) | 记需求、报错和临时想法；勾选小待办，选中文字交给 AI 继续讨论 | 输入框旁「项目便笺」 |
-| [选文操作](packages/dsh-selection-actions) | 选中回答中的一句话，带着引用追问、翻译或解释 | 消息选区旁「选中追问」，或输入框工具区 |
+![草稿找回、回答收藏、对话定位的实际插件演示](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/everyday-demo-dark.gif)
 
-新增工具使用紧凑图标入口，悬停可查看名称，窄窗口下自动换行。每个插件都有中文、英文以及深色、浅色主题样式。
+13 秒演示：草稿历史 → 带标签的回答收藏 → 搜索提问。使用实际插件组件、隔离测试宿主和合成内容。[静态版与全部截图](docs/GALLERY.md) · [素材来源](docs/media/README.md)。
 
-下面是隔离的真实 DSH 中的选文操作面板，使用合成测试内容。
+## 安装
 
-| 浅色主题 | 深色主题 |
-| --- | --- |
-| ![浅色选文操作](docs/screenshots/selection-light.png) | ![深色选文操作](docs/screenshots/selection-dark.png) |
-
-## 两种安装方式，任选一种
-
-### 整套安装
-
-在 DSH 的「插件 → 添加插件」中粘贴：
+在 DSH 打开 **插件 → 添加插件**，粘贴下面的地址，安装、启用后按提示重载：
 
 ```text
 https://github.com/yxue301603/dsh-everyday-plugins
 ```
 
-安装并启用后，按 DSH 提示重新加载。整套包含上面的全部 8 个插件。
+仓库提供预构建客户端，**不用自行编译，也不需要额外的 API Key**。已在 DSH **0.2.1-rc.2** 验证；声明范围为 0.2.x，其他版本以实际验证为准。
 
-### 按需安装
+已经装了独立快捷指令？可以保留它，按需添加其他功能。**同一个功能只安装一份**，整套与重复的独立包二选一。完整子目录地址、固定版本、桌面/Web 区别和升级步骤见 [安装指南](docs/INSTALLATION.md)。
 
-八个插件统一放在本仓库的 [`packages/`](packages) 目录，每个子目录都是可独立安装的原生插件。只装项目便笺时，在同一个「添加插件」输入框粘贴：
-
-```text
-https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes
-```
-
-其他插件的完整子目录安装地址见 [安装指南](docs/INSTALLATION.md#方式二只装需要的插件)。该方式只安装选中的插件；已有独立仓库地址继续作为兼容入口。
-
-**不要同时安装整套和其中相同的独立插件**，以免重复入口或重复监听。如果已安装之前的 `dsh-quick-prompts`，转为整套前先卸载独立版；保持同一个 DSH 来源、不清除站点数据时，原有快捷指令使用同一存储键，可以继续读取。
-
-兼容基线是 **DeepSeek Harness 0.2.1-rc.2 及其后的 0.2.x**，面向 Web 与桌面版。尚未验证的版本不作兼容承诺。仓库提供预构建文件，安装者无需 Node.js、编译器或自行构建。
-
-GitHub 安装需要能够访问 GitHub；DSH 中的 npm 镜像选择不会代理 GitHub 下载。详细步骤、独立地址清单和升级说明见 [安装指南](docs/INSTALLATION.md)。
-
-## 你掌握最后一步
-
-插件通过 DSH 原生接口工作，不自动发送消息，不自行调用模型，不需要 API Key。插入到输入框的内容由你检查和发送；「翻译」「解释」也只是先填入请求模板。输入插入保留已有文本，原生修订校验拒绝过期编辑；整段草稿替换另需确认。
-
-收藏、草稿历史、便笺、快捷指令和提醒记录保存在当前 DSH 来源的本地浏览器存储；选文引用只暂存在窗口内存。没有外部同步或推送服务器。文件列表、历史加载和定位使用正在连接的 DSH 宿主；它们可能请求宿主的原生接口，并非所有操作都离线完成。
-
-系统通知默认关闭，只在你主动开启并授予权限后启用；默认静音，DSH 在前台时减少通知。通知只显示会话标题，不显示回答正文。
-
-## 提前说清楚的边界
-
-- **目录只搜索已加载的提问。** 需要时手动加载更早消息，不会为搜索自动拉取整段对话。
-- **草稿历史保存纯文本。** 不备份附件文件，也不重建引用芯片；有容量与时间上限，强制崩溃前最后一小段编辑可能未保存。不会进会话就自动覆盖草稿。
-- **收藏与便笺是本地资料。** 更换机器或 DSH 来源不会自动同步，清除站点数据会删除记录。损坏数据和写入失败会提示；便笺保存失败时先复制或导出，再退出应用。
-- **文件列表有来源范围。** 统计原生交付、改动清单及支持的成功文件写入；仅靠终端创建、没有交付或改动记录的文件可能不在其中。预览取决于宿主能力，打开目录还需要宿主桌面可用。
-- **提醒需要客户端保持运行和连接。** 只监听启用后的实时变化，不补发旧历史。缺少明确结束原因时显示「已结束，请查看结果」，不推断成功；待确认依赖宿主提供的当前交互状态。关闭 DSH 后无法继续通知。
-- **选文来自已显示的单条消息。** 不支持跨多条消息的混合选区；原消息被卸载后可能无法定位，已经捕获的引用仍可手动使用。
-
-详细限制与存储上限见各独立插件 README。集中验证已通过 38 项模型检查、17 项浏览器场景及 12 项真实 DSH 功能检查；深浅色与原生安装结果见 [验证说明](docs/VERIFICATION.md)。
-
-## 仓库结构
-
-本仓库统一管理八个插件，目录按功能命名：
+只装草稿历史的例子：
 
 ```text
-dsh-everyday-plugins/
-└─ packages/
-   ├─ dsh-quick-prompts/          常用指令
-   ├─ dsh-conversation-outline/   对话目录
-   ├─ dsh-draft-history/          草稿历史
-   ├─ dsh-answer-library/         回答收藏
-   ├─ dsh-turn-files/             本轮文件
-   ├─ dsh-task-alerts/            任务提醒
-   ├─ dsh-project-notes/          项目便笺
-   └─ dsh-selection-actions/      选文操作
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-draft-history
 ```
 
-根包整合全部客户端。每个子目录携带自己的构建产物和必要共享代码，可以用 `#path:/packages/插件名` 按需安装。GitHub 上的同名独立仓库保留兼容旧链接，日常浏览、文档和主安装入口统一到这里。
+## 从三个日常场景开始
 
-开发者可使用 `npm ci` 安装开发依赖，`npm run build` 构建，`npm test` 运行模型与契约测试；浏览器和真实 DSH 验证以验证说明为准。普通使用者直接在 DSH 安装即可。
+| 你遇到的事 | 打开哪个工具 | 第一次就能试的动作 |
+| --- | --- | --- |
+| 刚写的需求误清空了 | **草稿历史** | 写一段话，停顿约一秒，清空后打开历史，预览并插入 |
+| 想留住好用的命令和解释 | **回答收藏** | 点回答下方 ☆，编辑标题和标签，再搜索或插回草稿；也能导出全部 JSON / Markdown |
+| 长对话里找不到之前的问题 | **对话目录** | 搜索自己的提问，点结果返回上下文；需要时手动加载更早消息 |
+
+## 八个小工具，各管一件常用的事
+
+| 插件目录 | 日常用途 | 入口 |
+| --- | --- | --- |
+| [快捷指令](packages/dsh-quick-prompts) | 置顶常用话术，项目分类、搜索、模板变量与最近使用 | 输入框「快捷指令」或置顶按钮 |
+| [对话目录](packages/dsh-conversation-outline) | 检索提问、跳转上下文、继续阅读 | 输入框「目录」 |
+| [草稿历史](packages/dsh-draft-history) | 自动记录、预览恢复、误清空保护 | 输入框「草稿」 |
+| [回答收藏](packages/dsh-answer-library) | 收藏摘录、标签搜索、复制复用、批量备份 | 回答下方 ☆ / 输入框「收藏」 |
+| [本轮文件](packages/dsh-turn-files) | 按轮次找交付与改动文件，预览、复制路径、打开目录 | 输入框「文件」 |
+| [任务提醒](packages/dsh-task-alerts) | 查看完成、待确认、失败与未读记录 | 输入框「提醒」及未读数 |
+| [项目便笺](packages/dsh-project-notes) | 自动保存的项目笔记、小待办、Markdown 导出 | 输入框「便笺」 |
+| [选文操作](packages/dsh-selection-actions) | 引用选中的一句话，准备追问、翻译或解释 | 选区旁「选中追问」 / 输入框「选文」 |
+
+宽输入框显示短名称，窄窗口或分栏保留图标，悬停可看完整名称。中英界面都跟随实际输入区宽度。
+
+## 你决定内容何时发送
+
+插入动作保留已有草稿，并使用 DSH 原生修订校验。**插件不会自动发送消息或自行调用模型**；翻译、解释也先准备请求，由你检查后发送。
+
+草稿、收藏、便笺、指令和提醒记录保存在当前 DSH 来源的本地浏览器存储；没有外部同步服务或遥测。历史加载、文件预览等使用你正在连接的 DSH 宿主。系统通知默认关闭，需要你主动开启并授权，只显示会话标题。
+
+需要提前了解的边界：草稿历史保存纯文本；目录搜索已加载提问；文件列表依赖原生交付和改动记录；提醒需要客户端在线。更换浏览器来源不会自动同步资料。收藏可导出备份，本版暂不支持导入。详见各插件 README 和 [安装说明](docs/INSTALLATION.md)。
+
+## 一起把日常体验做好
+
+觉得有用，可以 **Star [总仓库](https://github.com/yxue301603/dsh-everyday-plugins)**，方便找回和关注版本更新。发现不好用的地方，直接 [选一个反馈表单](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)，告诉我们你当时想完成什么。
+
+欢迎小而具体的改进、翻译和兼容反馈：[贡献指南](CONTRIBUTING.md) · [版本记录](CHANGELOG.md) · [验证结果](docs/VERIFICATION.md)。
+
+```sh
+npm ci
+npm run check
+npm run pack
+```
+
+八个插件统一维护在 `packages/`；已有同名独立仓库保留兼容入口，反馈集中到总仓库。无需为了使用插件运行上面的开发命令。

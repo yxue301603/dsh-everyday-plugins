@@ -1,0 +1,51 @@
+name: "使用建议 / Feature request"
+description: "告诉我们一个真实使用场景和期望 / Describe a real workflow and the outcome you need"
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎中文或 English，先描述遇到的场景即可，不需要写技术方案。
+        Chinese or English is welcome. Start with the workflow; a technical design is not required.
+        请勿附上凭据、个人会话或完整配置 / Please omit credentials, personal conversations and full configuration files.
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: "相关功能 / Related tool"
+      options:
+        - "工具箱整体、安装或发现入口 / Collection, installation or discovery"
+        - "快捷指令 / dsh-quick-prompts"
+        - "对话目录 / dsh-conversation-outline"
+        - "草稿历史 / dsh-draft-history"
+        - "回答收藏 / dsh-answer-library"
+        - "本轮文件 / dsh-turn-files"
+        - "任务提醒 / dsh-task-alerts"
+        - "项目便笺 / dsh-project-notes"
+        - "选文操作 / dsh-selection-actions"
+        - "新的功能或不确定 / New tool or not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: "你想完成什么？ / What are you trying to do?"
+      description: "描述一个常见场景，哪里多花了时间或不顺手？可用虚构例子 / Describe a recurring task and the friction. Synthetic examples are fine."
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: "希望如何改善？ / What would make it easier?"
+      description: "描述理想结果；按钮放哪里等细节可选 / Describe the desired outcome; UI or implementation details are optional."
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: "现在怎么处理？ / Current workaround"
+      description: "可选：目前的替代办法和使用频率 / Optional: how you handle it today and how often it comes up."
+  - type: input
+    id: environment
+    attributes:
+      label: "适用环境（可选） / Environment (optional)"
+      placeholder: "DSH version; OS; Desktop/Web; collection/subdirectory/standalone/local"

@@ -1,4 +1,4 @@
-/* dsh-draft-history v0.1.0 · MIT */
+/* dsh-draft-history v0.1.1 · MIT */
 window.__ModuleLoader__.load({id:"dsh-draft-history",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -46,6 +46,7 @@ var styles_default = `
 [data-composer-card] div:has(> [data-slot="conversation.input.left"] > .ed-launch){flex-wrap:wrap;min-width:0;max-width:100%;flex:1 1 auto}
 .ed-launch{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:28px;height:28px;border:0;border-radius:7px;padding:3px 6px;background:transparent;color:var(--dsw-alias-label-secondary,#475569);font:12px/20px system-ui;cursor:pointer;white-space:nowrap}
 .ed-launch:hover{background:var(--dsw-alias-interactive-bg-hover,#e2e8f0);color:var(--dsw-alias-label-primary,#172033)}
+@container(min-width:900px){.ed-launch .ed-launch-label{display:inline}}
 .ed-glyph{font-size:16px;line-height:1}.ed-launch-label{display:none}.ed-launch .ed-badge{border:0;background:var(--dsw-alias-button-primary-fill,#172033);color:var(--dsw-alias-label-primary-foreground,#fff);border-radius:8px;min-width:14px;padding:0 4px;font-size:9px;line-height:14px}
 .ed-dialog{--ed-bg:var(--dsw-alias-bg-layer-1,#fff);--ed-soft:var(--dsw-alias-bg-layer-2,#f5f7fa);--ed-text:var(--dsw-alias-label-primary,#172033);--ed-muted:var(--dsw-alias-label-secondary,#475569);--ed-line:var(--dsw-alias-border-l3,#d6dee8);--ed-accent:var(--dsw-alias-state-business-primary,#315fbe);box-sizing:border-box;margin:auto;width:min(760px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--ed-line);border-radius:18px;background:var(--ed-bg);color:var(--ed-text);font:13px/1.6 system-ui,sans-serif;box-shadow:0 24px 100px #0005;overflow:hidden}
 .ed-dialog::backdrop{background:#0b132650;backdrop-filter:blur(2px)}
@@ -100,7 +101,7 @@ var Boundary = class extends import_react.default.Component {
   }
 };
 function registerTool(ctx, spec) {
-  const { id, title, icon, Panel, Observer, Badge, order = 50 } = spec;
+  const { id, title, shortTitle = title, icon, Panel, Observer, Badge, order = 50 } = spec;
   function Launcher(props) {
     const t = useLocale(ctx);
     const [open, setOpen] = (0, import_react.useState)(false);
@@ -133,7 +134,7 @@ function registerTool(ctx, spec) {
     (0, import_react.useEffect)(() => {
       setOpen(false);
     }, [props.sessionId]);
-    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label" }, t(...title).split("与")[0]), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
+    return /* @__PURE__ */ import_react.default.createElement(Boundary, null, Observer && /* @__PURE__ */ import_react.default.createElement(Observer, { ...props, ctx, openPanel }), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", ref: trigger, className: "ed-launch", "data-everyday-launch": id, title: t(...title), "aria-label": t(...title), onPointerDown: (event) => event.preventDefault(), onClick: openPanel }, /* @__PURE__ */ import_react.default.createElement("span", { "aria-hidden": "true", className: "ed-glyph" }, icon), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-launch-label", "aria-hidden": "true" }, t(...shortTitle)), Badge && /* @__PURE__ */ import_react.default.createElement(Badge, { ctx })), open && /* @__PURE__ */ import_react.default.createElement("dialog", { ref: dialog, className: "ed-dialog", "data-everyday-plugin": id, "aria-label": t(...title), onCancel: (event) => {
       event.preventDefault();
       close();
     }, onClick: (event) => {
@@ -376,7 +377,7 @@ function apply(ctx) {
       });
     } }, t("确认", "Confirm")), /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: () => setConfirm("") }, t("取消", "Cancel")))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t("保留 30 天，每会话最多 12 个版本、共 40 个会话；仅保存在本机。", "Kept for 30 days, up to 12 versions per conversation and 40 conversations. Stored only on this device.")), all.length > 0 && /* @__PURE__ */ import_react2.default.createElement(Button, { danger: true, onClick: () => setConfirm("clear") }, t("清除本会话…", "Clear conversation…"))));
   }
-  const cleanup = registerTool(ctx, { id: name, title: ["草稿历史", "Draft history"], icon: "↶", order: 30, Panel, Observer });
+  const cleanup = registerTool(ctx, { id: name, title: ["草稿历史", "Draft history"], shortTitle: ["草稿", "Drafts"], icon: "↶", order: 30, Panel, Observer });
   ctx.on("dispose", () => {
     cleanup?.();
     store.dispose();

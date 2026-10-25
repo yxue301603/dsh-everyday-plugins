@@ -1,0 +1,96 @@
+name: "问题反馈 / Bug report"
+description: "报告安装、界面、存储或插件行为问题 / Report installation, UI, storage or behavior problems"
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这里统一收集工具箱和八个插件的问题，使用中文或 English 均可。请先搜索现有 Issues。
+        This is the shared tracker for the toolkit and all eight plugins. Please search existing issues first.
+        请勿粘贴 API Key、token、个人会话或完整配置。复现可以使用虚构内容；截图、日志均可省略。
+        Do not paste credentials, personal conversations or full configuration files. Synthetic examples are welcome; screenshots and logs are optional.
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: "受影响的功能 / Affected tool"
+      options:
+        - "整套安装或多个插件 / Collection or multiple tools"
+        - "快捷指令 / dsh-quick-prompts"
+        - "对话目录 / dsh-conversation-outline"
+        - "草稿历史 / dsh-draft-history"
+        - "回答收藏 / dsh-answer-library"
+        - "本轮文件 / dsh-turn-files"
+        - "任务提醒 / dsh-task-alerts"
+        - "项目便笺 / dsh-project-notes"
+        - "选文操作 / dsh-selection-actions"
+        - "不确定 / Not sure"
+    validations:
+      required: true
+  - type: input
+    id: dsh-version
+    attributes:
+      label: "DSH 版本 / DSH version"
+      description: "可从 DSH 关于或版本页面查看；找不到可填 unknown / Use About or version information; enter unknown if unavailable."
+      placeholder: "例如 / e.g. 0.2.1-rc.2"
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: "插件版本 / Plugin version"
+      description: "填写插件管理器显示的版本，或 unknown / Version shown in the plugin manager, or unknown."
+      placeholder: "例如 / e.g. toolkit 0.1.1, quick-prompts 0.1.3"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: "系统与使用方式 / OS and client"
+      placeholder: "例如 / e.g. Windows 11 + DSH Desktop; macOS + Web in Chrome"
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: "安装形式 / Installation source"
+      description: "请选择发生问题时使用的形式 / Select how the affected copy was installed."
+      options:
+        - "GitHub 整套 / GitHub collection"
+        - "GitHub #path 子目录 / GitHub #path subdirectory"
+        - "旧的同名独立仓库 / Standalone repository"
+        - "本地目录或 tgz / Local directory or tgz"
+        - "其他或不确定 / Other or not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "最少复现步骤 / Steps to reproduce"
+      description: "只描述必要操作，使用虚构文本或测试文件名；不要上传个人会话 / Describe the minimum steps with synthetic text or filenames, not personal chats."
+      placeholder: |
+        1. 打开…… / Open…
+        2. 点击或输入…… / Click or type…
+        3. 出现…… / Observe…
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: "预期与实际结果 / Expected and actual behavior"
+      placeholder: |
+        预期 / Expected:
+        实际 / Actual:
+    validations:
+      required: true
+  - type: textarea
+    id: optional-context
+    attributes:
+      label: "可选补充 / Optional context"
+      description: "可填深浅主题、窗口宽度、简短错误或脱敏截图。无需完整日志、配置或项目文件 / Theme, window width, a short error or redacted screenshot. Full logs, config and project files are not needed."
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: "提交前检查 / Before submitting"
+      options:
+        - label: "我没有附上凭据、个人会话或完整配置 / I have not included credentials, personal conversations or full configuration files."
+          required: true

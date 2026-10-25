@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="DSH Everyday: eight tools">
+  <rect width="128" height="128" rx="30" fill="#315fbe"/>
+  <g fill="#fff"><rect x="24" y="24" width="34" height="14" rx="5"/><rect x="70" y="24" width="34" height="14" rx="5"/><rect x="24" y="46" width="34" height="14" rx="5"/><rect x="70" y="46" width="34" height="14" rx="5"/></g>
+  <g fill="#c4d7ff"><rect x="24" y="68" width="34" height="14" rx="5"/><rect x="70" y="68" width="34" height="14" rx="5"/><rect x="24" y="90" width="34" height="14" rx="5"/><rect x="70" y="90" width="34" height="14" rx="5"/></g>
+</svg>

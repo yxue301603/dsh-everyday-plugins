@@ -1,16 +1,56 @@
 {
   "name": "dsh-everyday-plugins",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "A collection of independently installable everyday DeepSeek Harness plugins.",
+  "description": "Eight native DeepSeek Harness tools: draft recovery, answer bookmarks, chat outline, reusable prompts, files, alerts, notes and quoted follow-ups.",
   "main": "index.js",
-  "exports": { ".": "./index.js", "./client": "./lib/client.js", "./package.json": "./package.json" },
-  "files": ["index.js", "lib/client.js", "cordis.patch.yml", "README.md", "README.en.md", "docs", "LICENSE"],
-  "engines": { "node": ">=22.19.0", "dsh": ">=0.2.1-rc.2 <0.3.0" },
-  "repository": { "type": "git", "url": "git+https://github.com/yxue301603/dsh-everyday-plugins.git" },
-  "dsh": { "bundle": { "patch": "./cordis.patch.yml" }, "client": { "platform": "web", "immediately": true, "inject": ["@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-chat", "@deepseek-ai/dsh-client-ui-session", "@deepseek-ai/dsh-client-ui-workspace", "@deepseek-ai/dsh-client-ui-sidebar-right", "@deepseek-ai/dsh-client-locale"] } },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "screenshots.json",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
+    "docs/INSTALLATION.md",
+    "docs/VERIFICATION.md",
+    "docs/FEEDBACK.md",
+    "docs/screenshots",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yxue301603/dsh-everyday-plugins.git"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-chat",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs packages/*/src/*.test.js",
@@ -23,5 +63,21 @@
     "esbuild": "0.28.2",
     "react": "19.3.1",
     "react-dom": "19.3.1"
-  }
+  },
+  "author": "yxue301603",
+  "icon": "icon.svg",
+  "homepage": "https://github.com/yxue301603/dsh-everyday-plugins#readme",
+  "bugs": {
+    "url": "https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "productivity",
+    "draft-recovery",
+    "bookmarks",
+    "chat-navigation",
+    "prompts"
+  ]
 }

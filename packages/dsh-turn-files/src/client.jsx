@@ -49,5 +49,5 @@ export function apply(ctx) {
       <p className="ed-muted">{t('仅统计原生交付记录、改动清单及成功的 write / edit / str_replace_editor。终端命令创建但未交付的文件无法自动识别。', 'Uses native deliverables, change summaries and successful write / edit / str_replace_editor calls. Files created only through terminal commands may be absent.')}</p>
     </div>;
   }
-  registerTool(ctx, { id: name, title: ['本轮文件', 'Turn files'], icon: '▱', order: 40, Panel });
+  registerTool(ctx, { id: name, title: ['本轮文件', 'Turn files'], shortTitle: ['文件', 'Files'], icon: '▱', order: 40, Panel });
 }

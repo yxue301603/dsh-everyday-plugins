@@ -1,5 +1,6 @@
 /** Actual DSH integration. Never uses the user's DSH profile or desktop windows. */
 import { spawn } from 'node:child_process';
+import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -8,11 +9,15 @@ import { chromium, expect } from '@playwright/test';
 const root = process.cwd();
 const electron = process.env.DSH_NATIVE_EXECUTABLE ?? 'C:/Users/ThinkPad/AppData/Local/Programs/DeepSeek Harness/DeepSeek Harness.exe';
 const bin = process.env.DSH_NATIVE_BIN ?? 'C:/Users/ThinkPad/AppData/Local/Programs/DeepSeek Harness/resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js';
+const browserOptions = process.env.DSH_TEST_BROWSER_EXECUTABLE ? { executablePath: process.env.DSH_TEST_BROWSER_EXECUTABLE } : { channel: 'msedge' };
 const run = randomUUID().slice(0, 8);
 const dataHome = resolve(`.cache/native-home-${run}`), work = resolve(`.cache/native-work-${run}`);
 const patch = resolve(`.cache/native-overlay-${run}.yml`), key = randomUUID();
 const fixtureDir = resolve('.cache/native-fixture-package');
 const origin = 'http://127.0.0.1:43280';
+const browserHost = process.env.DSH_TEST_BROWSER_HOST ?? 'localhost';
+assert(['127.0.0.1', 'localhost'].includes(browserHost), 'Browser host must remain loopback');
+const browserOrigin = origin.replace('127.0.0.1', browserHost);
 await mkdir(dataHome, { recursive: true }); await mkdir(work, { recursive: true }); await mkdir('artifacts', { recursive: true });
 await mkdir('docs/screenshots', { recursive: true });
 await mkdir(fixtureDir, { recursive: true });
@@ -56,6 +61,10 @@ async function setDraft(text) {
 }
 async function undoTo(text) { const editor = page.locator('[contenteditable="true"]').first(); await editor.click(); await editor.press('Control+z'); await expect.poll(draft).toBe(text); }
 async function selectSentence(sessionId) {
+  const sentence = 'Native selection target: explain this sentence.';
+  // A real text click blurs Lexical before setting the synthetic range. Otherwise
+  // its queued native selection reconciliation can restore the editor caret.
+  await page.locator(`[data-conversation-session="${sessionId}"]`).getByText(sentence, { exact: true }).first().click();
   await page.evaluate(id => {
     const scope = document.querySelector(`[data-conversation-session="${CSS.escape(id)}"]`);
     const sentence = 'Native selection target: explain this sentence.';
@@ -69,6 +78,39 @@ async function selectSentence(sessionId) {
     }
     throw new Error('Native answer sentence missing');
   }, sessionId);
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe(sentence);
+  result.lastSelection = await page.evaluate(() => ({ text: window.getSelection()?.toString(), activeTag: document.activeElement?.tagName,
+    activeRole: document.activeElement?.getAttribute('role'), activeEditable: document.activeElement?.getAttribute('contenteditable') }));
+}
+async function inspectToolbar(width, theme = 'light') {
+  await page.setViewportSize({ width, height: 1000 });
+  await expect.poll(() => page.locator('.ed-launch-label').first().isVisible()).toBe(width === 1905);
+  const toolbar = await page.locator('.ed-launch').evaluateAll(nodes => nodes.map(node => {
+    const box = node.getBoundingClientRect(), label = node.querySelector('.ed-launch-label');
+    const labelBox = label.getBoundingClientRect(), card = node.closest('[data-composer-card]');
+    return { id: node.getAttribute('data-everyday-launch'), label: node.getAttribute('aria-label'), shortLabel: label.textContent,
+      labelVisible: getComputedStyle(label).display !== 'none' && labelBox.width > 0 && labelBox.height > 0,
+      x: box.x, right: box.right, width: box.width, cardWidth: card?.getBoundingClientRect().width,
+      cardScrollWidth: card?.scrollWidth, cardClientWidth: card?.clientWidth };
+  }));
+  assert.equal(toolbar.length, 7);
+  for (const item of toolbar) {
+    assert(item.shortLabel.trim(), `Missing short label: ${item.id}`);
+    if (width === 1905) assert(item.cardWidth >= 900, 'Wide-label check requires the unsplit wide composer card');
+    assert.equal(item.labelVisible, width === 1905, `Incorrect label visibility for ${item.id} at ${width}`);
+    if (item.x < 0 || item.right > width + 1 || item.cardScrollWidth > item.cardClientWidth + 2) result.layoutFailures.push({ id: 'native-all-8-composer', theme, viewport: width, ...item });
+  }
+  result.layout.push({ id: 'native-all-8-composer', theme, viewport: width, toolbar });
+  if (width === 1905) {
+    const controls = [];
+    for (const label of await page.locator('.ed-launch-label').all()) {
+      const measure = await label.evaluate(measureContrast); controls.push(measure);
+      if (measure.ratio < 4.5) result.contrastFailures.push({ theme, id: 'native-toolbar-labels', ...measure });
+    }
+    result.themes.push({ theme, id: 'native-toolbar-labels', controls });
+  }
+  await page.screenshot({ path: `artifacts/native-toolbar-${width}-${theme}.png`, fullPage: true });
+  return toolbar;
 }
 function measureContrast(element) {
   // Canvas resolves rgb(), color(srgb …), and modern color-mix() uniformly.
@@ -95,7 +137,8 @@ try {
   await expect.poll(async () => { try { return (await fixture()).attemptedModelCalls; } catch { return -1; } }, { timeout: 15000 }).toBe(0);
   const state = await fixture('create'); result.fixture = state;
   console.log(`Native fixture created: ${state.sessionId}, ${state.turns} turns`);
-  browser = await chromium.launch({ headless: true, channel: 'msedge' });
+  browser = await chromium.launch({ headless: true, ...browserOptions });
+  result.browser = { version: browser.version(), engine: 'Chromium', executableOverride: !!browserOptions.executablePath, managedEdgeChannel: !browserOptions.executablePath, origin: browserOrigin };
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN', colorScheme: 'light' });
   // Keep all OS integrations inert in the temporary browser process.
   await context.addInitScript(() => {
@@ -114,7 +157,7 @@ try {
     return route.abort('blockedbyclient');
   });
   const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(/http:\/\/127\.0\.0\.1:43280[^\s]*/g) ?? [];
-  await page.goto(urls.at(-1) ?? `${origin}/`);
+  await page.goto((urls.at(-1) ?? `${origin}/`).replace(origin, browserOrigin));
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(300);
     for (const name of ['继续', '稍后配置', 'Configure later']) {
@@ -147,13 +190,16 @@ try {
     console.log(JSON.stringify({ ancestors: result.toolbarAncestors.map(item => ({ tag: item.tag, attributes: item.attributes, children: item.children })), toolbar: result.toolbarProbe }, null, 2));
     throw { nativeProbeComplete: true };
   }
-  const toolbar = await page.locator('.ed-launch').evaluateAll(nodes => nodes.map(node => {
-    const box = node.getBoundingClientRect(); return { label: node.getAttribute('aria-label'), x: box.x, right: box.right, width: box.width,
-      parentTag: node.parentElement.tagName, parentClass: node.parentElement.className };
-  }));
-  result.layout.push({ id: 'native-all-8-composer', viewport: 390, toolbar });
-  for (const item of toolbar) if (item.x < 0 || item.right > 391) result.layoutFailures.push({ id: 'native-all-8-composer', ...item });
-  await page.screenshot({ path: 'artifacts/native-toolbar-narrow.png', fullPage: true });
+  // Check before opening a file preview: the native split view legitimately
+  // narrows the composer container even when the whole window remains wide.
+  for (const theme of ['light', 'dark']) {
+    await page.emulateMedia({ colorScheme: theme });
+    await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme'))).toBe(theme === 'dark');
+    await inspectToolbar(1905, theme); await inspectToolbar(390, theme);
+  }
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme'))).toBe(false);
+  result.checks.toolbarWideNarrowLabels = true;
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   let panel = await open('dsh-conversation-outline', '对话目录');
@@ -182,12 +228,42 @@ try {
   await panel.getByRole('textbox', { name: '标签（逗号分隔）', exact: true }).fill('测试, Native');
   await panel.getByRole('button', { name: '保存', exact: true }).click();
   await expect(panel.locator('article')).toContainText('#Native');
+  const savedBeforeExport = await page.evaluate(() => JSON.parse(localStorage.getItem('dsh.everyday.answer-library.v1')).items);
+  assert.equal(savedBeforeExport.length, 1);
+  assert.equal(savedBeforeExport[0].sessionId, state.sessionId);
+  assert(savedBeforeExport[0].messageId && savedBeforeExport[0].text.includes('Native fixture answer'));
+  await panel.getByRole('textbox', { name: '搜索收藏', exact: true }).fill('no-matching-native-bookmark');
+  await expect(panel.locator('article')).toHaveCount(0);
+  const downloadPending = page.waitForEvent('download');
+  await panel.getByRole('button', { name: '导出全部 JSON', exact: true }).click();
+  const download = await downloadPending;
+  assert.match(download.suggestedFilename(), /^dsh-answer-library-\d{4}-\d{2}-\d{2}\.json$/);
+  await download.saveAs('artifacts/native-library-backup.json');
+  assert.equal(await download.failure(), null);
+  const backup = JSON.parse(await readFile('artifacts/native-library-backup.json', 'utf8'));
+  assert.equal(backup.format, 'dsh-answer-library-backup'); assert.equal(backup.version, 1);
+  assert(Number.isFinite(Date.parse(backup.exportedAt)));
+  assert.deepEqual(backup.items, savedBeforeExport, 'Downloaded backup must retain all content, tags and source metadata despite an empty filter');
+  result.libraryBackup = { file: 'artifacts/native-library-backup.json', suggestedFilename: download.suggestedFilename(), items: backup.items.length, exactDataAndSource: true, emptySearchFilter: true };
+  result.checks.answerLibraryJsonDownload = true;
+  await panel.getByRole('textbox', { name: '搜索收藏', exact: true }).fill('');
   await panel.getByRole('button', { name: '插入草稿', exact: true }).click();
   await expect.poll(draft).toContain('Native fixture answer'); await undoTo('保留的原始草稿');
   result.checks.answerBookmarkTagsInsertionUndo = true;
 
   await selectSentence(state.sessionId);
+  result.bookmarkSelectionBeforeClick = await page.evaluate(() => {
+    const selection = window.getSelection(), range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const first = range?.startContainer?.parentElement;
+    const row = first?.closest('[data-chat-node-key],[data-chat-anchor-key],[data-message-seq],[data-seq]');
+    return { text: selection?.toString(), key: row?.getAttribute('data-chat-node-key'), scope: row?.closest('[data-conversation-session]')?.getAttribute('data-conversation-session'),
+      excluded: !!first?.closest('input,textarea,dialog,[contenteditable="true"],button,nav'),
+      activeTag: document.activeElement?.tagName, activeEditable: document.activeElement?.getAttribute('contenteditable'),
+      actionRow: document.querySelector('button[aria-label="收藏回答或选文"]')?.closest('[data-chat-node-key]')?.getAttribute('data-chat-node-key') };
+  });
+  assert.equal(result.bookmarkSelectionBeforeClick.text, 'Native selection target: explain this sentence.');
   await page.getByRole('button', { name: '收藏回答或选文', exact: true }).first().click();
+  result.bookmarkSelectionAfterClick = await page.evaluate(() => ({ selected: window.getSelection()?.toString(), items: JSON.parse(localStorage.getItem('dsh.everyday.answer-library.v1')).items }));
   panel = await open('dsh-answer-library', '回答收藏');
   const excerpt = panel.locator('article').filter({ has: page.locator('pre').filter({ hasText: /^Native selection target: explain this sentence\.$/ }) });
   await expect(excerpt).toHaveCount(1);
@@ -243,6 +319,7 @@ try {
   for (const theme of ['light', 'dark']) {
     await page.emulateMedia({ colorScheme: theme });
     await expect.poll(() => page.locator('body').evaluate(body => body.hasAttribute('data-ds-dark-theme'))).toBe(theme === 'dark');
+    await page.setViewportSize({ width: 1440, height: 1000 });
     for (const [id, label] of [['dsh-conversation-outline', '对话目录'], ['dsh-answer-library', '回答收藏'], ['dsh-turn-files', '本轮文件'], ['dsh-draft-history', '草稿历史'], ['dsh-project-notes', '项目便笺'], ['dsh-task-alerts', '任务提醒']]) {
       panel = await open(id, label);
       const measures = [];
@@ -294,7 +371,7 @@ try {
   console.log(JSON.stringify({ status: result.status, checks: result.checks, errorCount: result.errors.length }));
 } catch (error) {
   if (!error?.nativeProbeComplete) {
-    result.status = 'failed'; result.failure = String(error?.stack ?? error); console.error(result.failure);
+    result.status = 'failed'; result.failure = String(error?.stack ?? error).replace(/(processToken|token)=([^\s&]+)/g, '$1=[isolated-test-token]'); console.error(result.failure);
     if (page) try { await snapshot('failure'); } catch {}
     process.exitCode = 1;
   }
@@ -308,5 +385,8 @@ try {
   for (let count = 0; count < 20 && !exited; count++) await delay(50);
   result.cleanup = { hostPid: child.pid, hostExited: exited, browserClosed: !browser?.isConnected() };
   if (!result.cleanup.hostExited || !result.cleanup.browserClosed) { result.status = 'failed'; result.cleanup.failure = 'Own background processes did not finish cleanly'; process.exitCode = 1; }
+  if (result.status === 'passed' && result.errors.length) { result.status = 'failed'; process.exitCode = 1; }
   await writeFile('artifacts/native-result.json', JSON.stringify(result, null, 2));
+  const manifest = JSON.parse(await readFile('package.json', 'utf8'));
+  await writeFile(`artifacts/native-result-${manifest.version}.json`, JSON.stringify(result, null, 2));
 }

@@ -1,6 +1,6 @@
 {
   "name": "dsh-turn-files",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：按轮次查看生成或修改的文件，复制路径并预览。",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "lib/client.js",
     "cordis.patch.yml",
     "icon.svg",
+    "screenshots.json",
     "README.md",
     "README.en.md",
     "LICENSE"
@@ -33,14 +34,16 @@
     "type": "git",
     "url": "git+https://github.com/yxue301603/dsh-turn-files.git"
   },
-  "homepage": "https://github.com/yxue301603/dsh-turn-files#readme",
+  "homepage": "https://github.com/yxue301603/dsh-everyday-plugins/tree/main/packages/dsh-turn-files",
   "bugs": {
-    "url": "https://github.com/yxue301603/dsh-turn-files/issues"
+    "url": "https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose"
   },
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
-    "productivity"
+    "productivity",
+    "files",
+    "artifacts"
   ],
   "icon": "icon.svg",
   "dsh": {

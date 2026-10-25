@@ -11,13 +11,13 @@ for (const plugin of plugins.filter(p => !p.existing)) {
   await cp('scripts/build-one.mjs', `${dir}/scripts/build.mjs`);
   await cp('LICENSE', `${dir}/LICENSE`);
   const manifest = {
-    name: plugin.name, version: '0.1.0', type: 'module', description: `DeepSeek Harness 原生插件：${plugin.description}`, license: 'MIT', author: owner,
+    name: plugin.name, version: '0.1.1', type: 'module', description: `DeepSeek Harness 原生插件：${plugin.description}`, license: 'MIT', author: owner,
     main: 'index.js', exports: { '.': './index.js', './client': './lib/client.js', './package.json': './package.json' },
-    files: ['index.js', 'lib/client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'README.en.md', 'LICENSE'],
+    files: ['index.js', 'lib/client.js', 'cordis.patch.yml', 'icon.svg', 'screenshots.json', 'README.md', 'README.en.md', 'LICENSE'],
     scripts: { build: 'node scripts/build.mjs', test: 'node --test src/*.test.js', check: 'npm run build && npm test' }, engines: { node: '>=22.19.0', dsh: '>=0.2.1-rc.2 <0.3.0' },
     repository: { type: 'git', url: `git+https://github.com/${owner}/${plugin.name}.git` },
-    homepage: `https://github.com/${owner}/${plugin.name}#readme`, bugs: { url: `https://github.com/${owner}/${plugin.name}/issues` },
-    keywords: ['dsh-plugin', 'deepseek-harness', 'productivity'], icon: 'icon.svg',
+    homepage: `https://github.com/${owner}/dsh-everyday-plugins/tree/main/packages/${plugin.name}`, bugs: { url: `https://github.com/${owner}/dsh-everyday-plugins/issues/new/choose` },
+    keywords: ['dsh-plugin', 'deepseek-harness', 'productivity', ...(plugin.keywords ?? [])], icon: 'icon.svg',
     dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', immediately: true, inject: ['@deepseek-ai/dsh-client-ui-conversation', '@deepseek-ai/dsh-client-ui-chat', '@deepseek-ai/dsh-client-ui-session', '@deepseek-ai/dsh-client-ui-workspace', '@deepseek-ai/dsh-client-ui-sidebar-right', '@deepseek-ai/dsh-client-locale'] } },
     devDependencies: { esbuild: '0.28.2' },
   };

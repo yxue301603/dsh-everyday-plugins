@@ -24,9 +24,13 @@ const artifacts = resolve(root, 'artifacts');
 const desktopDirectory = join(homedir(), 'AppData', 'Local', 'Programs', 'DeepSeek Harness');
 const electron = process.env.DSH_NATIVE_EXECUTABLE ?? join(desktopDirectory, 'DeepSeek Harness.exe');
 const bin = process.env.DSH_NATIVE_BIN ?? join(desktopDirectory, 'resources', 'app.asar', 'dsh', 'node_modules', '@deepseek-ai', 'dsh-desktop-host', 'lib', 'cli.js');
+const browserOptions = process.env.DSH_TEST_BROWSER_EXECUTABLE ? { executablePath: process.env.DSH_TEST_BROWSER_EXECUTABLE } : { channel: 'msedge' };
 const expectedVersion = process.env.DSH_TEST_EXPECTED_VERSION ?? '0.2.1-rc.2';
 const port = 43281;
 const origin = `http://127.0.0.1:${port}`;
+const browserHost = process.env.DSH_TEST_BROWSER_HOST ?? 'localhost';
+assert(['127.0.0.1', 'localhost'].includes(browserHost), 'Browser host must remain loopback');
+const browserOrigin = origin.replace('127.0.0.1', browserHost);
 const run = randomUUID().slice(0, 8);
 const result = { status: 'running', run, expectedVersion, origin, packagedInstall: true, synthetic: true, modes: [], touchedUserProfile: false };
 const children = new Set();
@@ -141,7 +145,8 @@ async function runMode(mode, packages) {
     await expect.poll(async () => { try { return (await fixture()).attemptedModelCalls; } catch { return -1; } }, { timeout: 15000 }).toBe(0);
     const state = await fixture('create');
     info.syntheticSession = state.sessionId;
-    browser = await chromium.launch({ headless: true, channel: 'msedge' });
+    browser = await chromium.launch({ headless: true, ...browserOptions });
+    info.browser = { version: browser.version(), engine: 'Chromium', executableOverride: !!browserOptions.executablePath, managedEdgeChannel: !browserOptions.executablePath, origin: browserOrigin };
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
     await context.addInitScript(() => {
       window.__installNotificationAttempts = 0;
@@ -152,7 +157,7 @@ async function runMode(mode, packages) {
     page.on('pageerror', error => info.pageerrors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') info.consoleErrors.push(message.text()); });
     const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(new RegExp(`http://127\\.0\\.0\\.1:${port}[^\\s]*`, 'g')) ?? [];
-    await page.goto(urls.at(-1) ?? `${origin}/`);
+    await page.goto((urls.at(-1) ?? `${origin}/`).replace(origin, browserOrigin));
     for (let attempt = 0; attempt < 15; attempt++) {
       await page.waitForTimeout(300);
       for (const label of ['继续', '稍后配置', 'Configure later']) {
@@ -193,7 +198,7 @@ async function runMode(mode, packages) {
     console.log(`[${mode}] Native tgz install, activation, hashes and all eight panels passed.`);
   } catch (error) {
     if (page) try { await page.screenshot({ path: resolve(artifacts, `install-${mode}-failure.png`), fullPage: true }); info.failureBody = (await page.locator('body').innerText()).slice(0, 16000); } catch {}
-    info.status = 'failed'; info.failure = String(error.stack ?? error); throw error;
+    info.status = 'failed'; info.failure = safeLogs(String(error.stack ?? error)); throw error;
   } finally {
     if (browser) await browser.close();
     await writeFile(resolve(artifacts, `install-${mode}-host.log`), safeLogs(logs));
@@ -208,16 +213,16 @@ try {
   const suite = { name: collection, archive: resolve(artifacts, `${collection}-${rootManifest.version}.tgz`), built: resolve(root, 'lib', 'client.js') };
   const individual = [];
   for (const plugin of plugins) {
-    const packageRoot = plugin.existing ? resolve(root, '..', 'dsh-quick-prompts') : resolve(root, 'packages', plugin.name);
+    const packageRoot = resolve(root, 'packages', plugin.name);
     const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'));
-    individual.push({ name: plugin.name, archive: plugin.existing ? resolve(packageRoot, 'artifacts', `${plugin.name}-0.1.3.tgz`) : resolve(artifacts, `${plugin.name}-${manifest.version}.tgz`), built: resolve(packageRoot, 'lib', 'client.js') });
+    individual.push({ name: plugin.name, archive: resolve(artifacts, `${plugin.name}-${manifest.version}.tgz`), built: resolve(packageRoot, 'lib', 'client.js') });
   }
   for (const item of [suite, ...individual]) await access(item.archive);
   await runMode('suite', [suite]);
   await runMode('individual', individual);
   result.status = 'passed';
 } catch (error) {
-  result.status = 'failed'; result.failure = String(error.stack ?? error); process.exitCode = 1; console.error(result.failure);
+  result.status = 'failed'; result.failure = safeLogs(String(error.stack ?? error)); process.exitCode = 1; console.error(result.failure);
 } finally {
   for (const child of [...children]) await terminate(child);
   await mkdir(artifacts, { recursive: true });

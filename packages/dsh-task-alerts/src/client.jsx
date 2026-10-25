@@ -125,5 +125,5 @@ export function apply(ctx) {
       <p className="ed-muted">{t('仅监听插件启用后的实时变化，不补发旧历史。只有明确结束原因才区分完成或失败；仅获知停止运行时，显示“已结束，请查看结果”。待确认取决于宿主提供的实时数据。', 'Only new live changes are monitored; history is never replayed. Completion and failure require an explicit end reason. A running-state change alone means “Ended; review result”. Attention notices depend on live host data.')}</p>
     </div>;
   }
-  registerTool(ctx, { id: name, title: ['任务提醒', 'Task alerts'], icon: '♧', order: 50, Panel, Badge });
+  registerTool(ctx, { id: name, title: ['任务提醒', 'Task alerts'], shortTitle: ['提醒', 'Alerts'], icon: '♧', order: 50, Panel, Badge });
 }

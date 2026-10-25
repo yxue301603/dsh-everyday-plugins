@@ -63,6 +63,6 @@ export function apply(ctx) {
       {confirm && <Notice><p>{confirm === 'done' ? t('清除所有已完成待办？', 'Remove all completed tasks?') : confirm === 'other' ? t(`删除此工作区的便笺和待办？${otherWorkspace === '__general__' ? t('通用便笺', 'General notebook') : otherWorkspace}`, `Delete notes and tasks for ${otherWorkspace === '__general__' ? 'General notebook' : otherWorkspace}?`) : t('清空当前项目的便笺和全部待办？建议先导出。', 'Clear this project note and all tasks? Export first if needed.')}</p><div className="ed-row"><Button danger onClick={() => run(() => { if (confirm === 'done') update(value => ({ ...value, tasks: value.tasks.filter(task => !task.done) })); else { const target = confirm === 'other' ? (otherWorkspace === '__general__' ? '' : otherWorkspace) : workspace; store.update(value => ({ ...value, projects: value.projects.filter(item => item.workspace !== target) })); } if (confirm === 'project') { pendingNotes.delete(workspace); setNote(''); setSelection(''); } else if (confirm === 'other') pendingNotes.delete(otherWorkspace === '__general__' ? '' : otherWorkspace); setConfirm(''); setUndo(null); setOtherWorkspace(''); })}>{t('确认删除', 'Confirm deletion')}</Button><Button onClick={() => setConfirm('')}>{t('取消', 'Cancel')}</Button></div></Notice>}
     </div>;
   }
-  const cleanup = registerTool(ctx, { id: name, title: ['项目便笺', 'Project notes'], icon: '▤', order: 70, Panel });
+  const cleanup = registerTool(ctx, { id: name, title: ['项目便笺', 'Project notes'], shortTitle: ['便笺', 'Notes'], icon: '▤', order: 70, Panel });
   ctx.on('dispose', () => { cleanup?.(); store.dispose(); });
 }

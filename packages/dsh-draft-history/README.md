@@ -1,5 +1,13 @@
 # 草稿历史 · Draft History
 
+> [DSH Everyday 日常工具箱](https://github.com/yxue301603/dsh-everyday-plugins) 的独立插件 · [全部演示](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/GALLERY.md) · [统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+
+**刚写好的需求误清空了？先预览这个会话的旧版本，再安全恢复。**
+
+![草稿历史 / Draft history](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/dsh-draft-history-dark.png)
+
+实际插件组件，隔离测试宿主，合成内容。
+
 给 DeepSeek Harness 输入框多一份后悔药。按会话记录草稿版本，误清空、改坏后可以预览、搜索和恢复。
 
 ## 安装与使用
@@ -7,7 +15,7 @@
 在 DSH「插件 → 添加插件」中填写以下 GitHub 仓库地址（也可使用本地插件目录）；按宿主提示启用及重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。它是原生 DSH 插件，无须安装浏览器扩展，不调用模型。
 
 ```text
-https://github.com/yxue301603/dsh-draft-history
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-draft-history
 ```
 
 整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
@@ -29,3 +37,7 @@ https://github.com/yxue301603/dsh-draft-history
 读取损坏记录或写入失败时显示错误，不静默覆盖损坏的原记录。建议先复制重要文本再处理浏览器存储。清除 DSH 站点数据也会移除插件历史。界面支持中文、英文与深浅主题，所有输入只走 DSH 官方接口。
 
 See [English documentation](README.en.md).
+
+## 反馈与版本
+
+安装或使用问题请到[工具箱统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)，选择本插件名称。[固定版本下载与校验](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [贡献指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/CONTRIBUTING.md)。同名独立仓库仍是兼容安装来源。

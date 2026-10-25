@@ -1,0 +1,266 @@
+{
+  "capture": "headless contract fixture with unchanged shipped plugin bundle",
+  "syntheticDataOnly": true,
+  "interfaceRepainted": false,
+  "bundleSha256": "1906dc199e9ce8f5b8210f1ed7ddc9518f9da0c2d2573d053ec4f9ce569cae32",
+  "screenshots": [
+    {
+      "file": "dsh-quick-prompts-dark.png",
+      "caption": "常用指令快捷面板",
+      "width": 622,
+      "height": 573
+    },
+    {
+      "file": "dsh-conversation-outline-dark.png",
+      "caption": "对话目录",
+      "width": 760,
+      "height": 788
+    },
+    {
+      "file": "dsh-conversation-outline-light.png",
+      "caption": "对话目录 · 浅色主题",
+      "width": 760,
+      "height": 788
+    },
+    {
+      "file": "dsh-draft-history-dark.png",
+      "caption": "草稿历史",
+      "width": 760,
+      "height": 665
+    },
+    {
+      "file": "dsh-draft-history-light.png",
+      "caption": "草稿历史 · 浅色主题",
+      "width": 760,
+      "height": 665
+    },
+    {
+      "file": "dsh-answer-library-dark.png",
+      "caption": "回答收藏",
+      "width": 760,
+      "height": 802
+    },
+    {
+      "file": "dsh-answer-library-light.png",
+      "caption": "回答收藏 · 浅色主题",
+      "width": 760,
+      "height": 802
+    },
+    {
+      "file": "dsh-turn-files-dark.png",
+      "caption": "本轮文件",
+      "width": 760,
+      "height": 854
+    },
+    {
+      "file": "dsh-task-alerts-dark.png",
+      "caption": "任务提醒",
+      "width": 760,
+      "height": 770
+    },
+    {
+      "file": "dsh-project-notes-dark.png",
+      "caption": "项目便笺",
+      "width": 760,
+      "height": 688
+    },
+    {
+      "file": "dsh-project-notes-tasks-dark.png",
+      "caption": "项目待办与完成进度",
+      "width": 760,
+      "height": 672
+    },
+    {
+      "file": "composer-tools-dark.png",
+      "caption": "宽输入卡上的工具名称",
+      "width": 1040,
+      "height": 252
+    },
+    {
+      "file": "selection-inline-dark.png",
+      "caption": "消息选区旁的追问入口",
+      "width": 840,
+      "height": 150
+    },
+    {
+      "file": "dsh-selection-actions-dark.png",
+      "caption": "选文操作",
+      "width": 760,
+      "height": 598
+    }
+  ],
+  "animations": [
+    {
+      "file": "everyday-demo-dark.gif",
+      "bytes": 747742,
+      "frames": 7,
+      "durationMs": 13200,
+      "width": 1280,
+      "height": 800
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "submittedMessages": 0,
+  "notificationAttempts": 0,
+  "optimizedImages": [
+    {
+      "file": "dsh-quick-prompts-dark.png",
+      "bytes": 53769,
+      "width": 622,
+      "height": 574
+    },
+    {
+      "file": "dsh-conversation-outline-dark.png",
+      "bytes": 47117,
+      "width": 760,
+      "height": 790
+    },
+    {
+      "file": "dsh-conversation-outline-light.png",
+      "bytes": 47766,
+      "width": 760,
+      "height": 790
+    },
+    {
+      "file": "dsh-draft-history-dark.png",
+      "bytes": 44639,
+      "width": 760,
+      "height": 666
+    },
+    {
+      "file": "dsh-draft-history-light.png",
+      "bytes": 45531,
+      "width": 760,
+      "height": 666
+    },
+    {
+      "file": "dsh-answer-library-dark.png",
+      "bytes": 66964,
+      "width": 760,
+      "height": 804
+    },
+    {
+      "file": "dsh-answer-library-light.png",
+      "bytes": 68050,
+      "width": 760,
+      "height": 804
+    },
+    {
+      "file": "dsh-turn-files-dark.png",
+      "bytes": 50480,
+      "width": 760,
+      "height": 856
+    },
+    {
+      "file": "dsh-task-alerts-dark.png",
+      "bytes": 50842,
+      "width": 760,
+      "height": 770
+    },
+    {
+      "file": "dsh-project-notes-dark.png",
+      "bytes": 38484,
+      "width": 760,
+      "height": 690
+    },
+    {
+      "file": "dsh-project-notes-tasks-dark.png",
+      "bytes": 40312,
+      "width": 760,
+      "height": 672
+    },
+    {
+      "file": "composer-tools-dark.png",
+      "bytes": 10537,
+      "width": 1040,
+      "height": 252
+    },
+    {
+      "file": "everyday-story-dark.png",
+      "bytes": 161504,
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "file": "selection-inline-dark.png",
+      "bytes": 9405,
+      "width": 840,
+      "height": 149
+    },
+    {
+      "file": "dsh-selection-actions-dark.png",
+      "bytes": 30592,
+      "width": 760,
+      "height": 600
+    }
+  ],
+  "posters": [
+    {
+      "file": "everyday-story-dark.webp",
+      "bytes": 52684
+    },
+    {
+      "file": "everyday-story-library.webp",
+      "bytes": 49382
+    },
+    {
+      "file": "everyday-story-outline.webp",
+      "bytes": 40602
+    }
+  ],
+  "status": "passed",
+  "brandingImages": [
+    {
+      "file": "icon.png",
+      "bytes": 4406,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "social-preview.png",
+      "bytes": 118029,
+      "width": 1280,
+      "height": 640
+    }
+  ],
+  "selectionPlacement": {
+    "aboveSelection": true,
+    "bookmarkUnobstructed": true,
+    "bookmarkClickSavedExcerpt": true,
+    "button": {
+      "x": 247,
+      "y": 169.390625,
+      "width": 100.15625,
+      "height": 38.390625
+    },
+    "selection": {
+      "top": 213.390625,
+      "bottom": 253.78125
+    },
+    "bookmark": {
+      "x": 247,
+      "y": 259.171875,
+      "width": 26.984375,
+      "height": 27
+    }
+  },
+  "refreshes": [
+    {
+      "scope": "selection screenshots",
+      "bundleSha256": "24eba0e40c05827eeb57a5e3d55f5d439f94ad9130727bd2f755bb566c36c021",
+      "files": [
+        "selection-inline-dark.png",
+        "dsh-selection-actions-dark.png"
+      ]
+    },
+    {
+      "scope": "selection screenshots",
+      "bundleSha256": "24eba0e40c05827eeb57a5e3d55f5d439f94ad9130727bd2f755bb566c36c021",
+      "files": [
+        "selection-inline-dark.png",
+        "dsh-selection-actions-dark.png"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,13 @@
 # 项目便笺 · Project Notes
 
+> [DSH Everyday 日常工具箱](https://github.com/yxue301603/dsh-everyday-plugins) 的独立插件 · [全部演示](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/GALLERY.md) · [统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+
+**需求、报错、下一步：留在当前项目的便笺和小待办里。**
+
+![项目便笺 / Project notes](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/dsh-project-notes-dark.png)
+
+实际插件组件，隔离测试宿主，合成内容。
+
 给每个工作区一张随手写的便笺和一份轻量待办。记需求、报错、临时想法；需要讨论时，一键把文字放进 DSH 输入框。
 
 ## 安装与使用
@@ -7,7 +15,7 @@
 在 DSH「插件 → 添加插件」中填写以下 GitHub 仓库地址（也可使用本地插件目录），启用后按宿主提示重新加载。需要 DeepSeek Harness **0.2.1-rc.2 或更新的 0.2.x**。
 
 ```text
-https://github.com/yxue301603/dsh-project-notes
+https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/dsh-project-notes
 ```
 
 整套安装、迁移和升级步骤见[工具箱安装指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/docs/INSTALLATION.md)。
@@ -29,3 +37,7 @@ https://github.com/yxue301603/dsh-project-notes
 存储失败时显示错误并保留当前便笺的内存文本，可重试、复制或导出；退出 DSH 会丢失尚未保存的内存编辑。损坏数据不会静默重置。清除 DSH 站点数据会移除插件数据。界面支持中文、英文、深色与浅色主题。
 
 See [English documentation](README.en.md).
+
+## 反馈与版本
+
+安装或使用问题请到[工具箱统一反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)，选择本插件名称。[固定版本下载与校验](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [贡献指南](https://github.com/yxue301603/dsh-everyday-plugins/blob/main/CONTRIBUTING.md)。同名独立仓库仍是兼容安装来源。
