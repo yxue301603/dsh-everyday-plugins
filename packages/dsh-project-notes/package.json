@@ -1,6 +1,6 @@
 {
   "name": "dsh-project-notes",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：工作区便笺、轻量待办、自动保存与草稿插入。",
   "license": "MIT",

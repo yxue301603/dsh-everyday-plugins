@@ -4,17 +4,19 @@
 
 Eight native [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugins. Install one tool or the full collection. English / 中文 · Light & dark · Local records · MIT.
 
-[中文](README.md) · [All eight tools and screenshots](docs/GALLERY.md) · [Install and update](docs/INSTALLATION.md#english-quick-guide) · [Download a fixed release](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [Report an issue](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+[中文](README.md) · [All eight tools and screenshots](docs/GALLERY.md) · [Install and update](docs/INSTALLATION.md#english-quick-guide) · [Download a fixed release](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.2) · [Report an issue](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
 
 [![Checks](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-315fbe)](LICENSE)
-[![DSH tested](https://img.shields.io/badge/DSH%20tested-0.2.1--rc.2-315fbe)](docs/VERIFICATION.md)
+[![DSH tested](https://img.shields.io/badge/DSH%20tested-0.2.2--alpha.2-315fbe)](docs/VERIFICATION.md)
 
 ## See the everyday workflow
 
 ![Recovering a draft, tagging saved answers, and finding an earlier question](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/everyday-demo-dark.gif)
 
 A 13-second walkthrough with actual plugin components, an isolated contract host and synthetic content. [Static version and gallery](docs/GALLERY.md) · [Capture details](docs/media/README.md).
+
+This release fixes long-chat scrolling and typing stalls. [Performance evidence and reproduction](docs/PERFORMANCE.md).
 
 ## Install
 
@@ -24,7 +26,7 @@ In DSH, open **Plugins → Add plugin**, paste the address, install and enable, 
 https://github.com/yxue301603/dsh-everyday-plugins
 ```
 
-Prebuilt clients are included: **no user build step or extra API key**. Tested with DSH **0.2.1-rc.2**; the declared range is 0.2.x. Untested versions are not promised to work.
+Prebuilt clients are included: **no user build step or extra API key**. Tested with DSH **0.2.1-rc.3, rc.4 and 0.2.2-alpha.2**. Alpha.2 is a preview release; see the exact scope in [verification notes](docs/VERIFICATION.md).
 
 Already have standalone Quick prompts? Keep it and add other tools individually. **Install each feature once**: choose the collection or non-overlapping individual packages. See the [installation guide](docs/INSTALLATION.md#english-quick-guide) for subdirectory URLs, pinned releases, Desktop/Web profiles and upgrades.
 

@@ -2,19 +2,23 @@
 export function createStore(key, initial, validate = data => data) {
   const listeners = new Set();
   let disposed = false;
+  let cachedRaw, cachedRead;
   const fresh = () => typeof initial === 'function' ? initial() : structuredClone(initial);
   function read() {
     try {
       const raw = localStorage.getItem(key);
+      if (cachedRead && raw === cachedRaw) return cachedRead;
       if (raw !== null && raw.length > 2_000_000) throw new Error('Document too large');
       const data = validate(raw === null ? fresh() : JSON.parse(raw));
       if (!data || typeof data !== 'object') throw new Error('Invalid document');
-      return { data, error: '' };
+      cachedRaw = raw;
+      cachedRead = { data, error: '' };
+      return cachedRead;
     } catch { return { data: fresh(), error: '无法读取本地数据 / Cannot read local data. Export or back up the original before resetting.' }; }
   }
   let snapshot = read();
   const emit = () => { for (const fn of listeners) fn(); };
-  const onStorage = event => { if (event.key === key || event.key === null) { snapshot = read(); emit(); } };
+  const onStorage = event => { if (event.key === key || event.key === null) { const next = read(); if (next !== snapshot) { snapshot = next; emit(); } } };
   window.addEventListener('storage', onStorage);
   return {
     key,
@@ -28,8 +32,10 @@ export function createStore(key, initial, validate = data => data) {
         const next = validate(typeof change === 'function' ? change(structuredClone(latest.data)) : change);
         const json = JSON.stringify(next);
         if (!next || typeof next !== 'object' || json.length > 2_000_000) throw new Error('本地记录已达上限 / Local storage limit reached');
+        if (json === cachedRaw) { if (snapshot !== latest) { snapshot = latest; emit(); } return snapshot.data; }
         localStorage.setItem(key, json);
         snapshot = { data: JSON.parse(json), error: '' };
+        cachedRaw = json; cachedRead = snapshot;
         emit();
         return snapshot.data;
       } catch (error) {
@@ -37,7 +43,7 @@ export function createStore(key, initial, validate = data => data) {
       }
     },
     raw: () => localStorage.getItem(key) ?? '',
-    reset() { const next = validate(fresh()); localStorage.setItem(key, JSON.stringify(next)); snapshot = { data: next, error: '' }; emit(); },
+    reset() { const next = validate(fresh()), raw = JSON.stringify(next); localStorage.setItem(key, raw); snapshot = { data: JSON.parse(raw), error: '' }; cachedRaw = raw; cachedRead = snapshot; emit(); },
     dispose() { disposed = true; window.removeEventListener('storage', onStorage); listeners.clear(); },
   };
 }

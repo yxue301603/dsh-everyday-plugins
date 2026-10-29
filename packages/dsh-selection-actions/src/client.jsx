@@ -1,53 +1,44 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { registerTool, useLocale, Button, Empty, Notice } from '../shared/ui.jsx';
 import { insertText } from '../shared/native.js';
 import { quoteDraft, MAX_QUOTE } from './model.js';
 import { readSelection, sourceAvailable, revealSelection } from './selection.js';
+import { createSelectionMonitor, sameCapture } from './monitor.js';
 
 export const name = 'dsh-selection-actions';
 export const inject = ['slots', 'locale', 'sessions'];
 
 export function apply(ctx) {
   const captures = new Map();
-  const listeners = new Set();
-  const subscribe = listener => { listeners.add(listener); return () => listeners.delete(listener); };
+  const listeners = new Map();
+  const subscribe = (sessionId, listener) => {
+    if (!listeners.has(sessionId)) listeners.set(sessionId, new Set());
+    const group = listeners.get(sessionId); group.add(listener);
+    return () => { group.delete(listener); if (!group.size) listeners.delete(sessionId); };
+  };
   function publish(sessionId, capture) {
+    if (sameCapture(captures.get(sessionId) ?? null, capture)) return;
     if (capture) {
       captures.set(sessionId, capture);
       while (captures.size > 20) captures.delete(captures.keys().next().value);
     } else captures.delete(sessionId);
-    for (const listener of listeners) listener();
+    for (const listener of listeners.get(sessionId) ?? []) listener();
   }
+  const monitor = createSelectionMonitor({ document, window, read: readSelection, getCapture: sessionId => captures.get(sessionId) ?? null, publish });
   function useCapture(sessionId) {
-    return useSyncExternalStore(subscribe, () => captures.get(sessionId) ?? null);
+    const listen = useCallback(listener => subscribe(sessionId, listener), [sessionId]);
+    return useSyncExternalStore(listen, () => captures.get(sessionId) ?? null);
   }
   function Observer({ sessionId, openPanel }) {
     const t = useLocale(ctx);
     const capture = useCapture(sessionId);
     const [point, setPoint] = useState(null);
     useEffect(() => {
-      let timer;
-      const read = () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          const next = readSelection(sessionId);
-          if (next) {
-            publish(sessionId, next);
-            const rect = next.range.getBoundingClientRect();
-            // Prefer the space above the quote, leaving its answer actions clickable.
-            const top = rect.top >= 56 ? rect.top - 44 : rect.bottom + 8;
-            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, top)) });
-          } else setPoint(null);
-        }, 80);
-      };
-      const hide = () => setPoint(null);
-      document.addEventListener('selectionchange', read);
-      document.addEventListener('scroll', hide, true);
-      window.addEventListener('blur', hide);
-      return () => { clearTimeout(timer); document.removeEventListener('selectionchange', read); document.removeEventListener('scroll', hide, true); window.removeEventListener('blur', hide); captures.delete(sessionId); };
+      setPoint(null);
+      return monitor.watch(sessionId, setPoint);
     }, [sessionId]);
     return openPanel && point && capture ? <button type="button" data-ed-selection-button="" onPointerDown={event => event.preventDefault()}
-      onClick={() => { setPoint(null); openPanel(); }} style={{ position: 'fixed', ...point, zIndex: 900, padding: '7px 12px', borderRadius: 10, border: '1px solid var(--dsw-alias-border-l1, #777)', background: 'var(--dsw-alias-bg-base, #252525)', color: 'var(--dsw-alias-label-primary, #eee)', boxShadow: '0 4px 20px #0003', font: 'inherit', cursor: 'pointer' }}>{t('选中追问', 'Ask about selection')} ↗</button> : null;
+      onClick={() => { monitor.hide(); openPanel(); }} style={{ position: 'fixed', ...point, zIndex: 900, padding: '7px 12px', borderRadius: 10, border: '1px solid var(--dsw-alias-border-l1, #777)', background: 'var(--dsw-alias-bg-base, #252525)', color: 'var(--dsw-alias-label-primary, #eee)', boxShadow: '0 4px 20px #0003', font: 'inherit', cursor: 'pointer' }}>{t('选中追问', 'Ask about selection')} ↗</button> : null;
   }
   function Panel({ sessionId, inputActions, close, insertionSpan }) {
     const t = useLocale(ctx);
@@ -93,5 +84,5 @@ export function apply(ctx) {
     </div>;
   }
   registerTool(ctx, { id: name, title: ['选中追问', 'Selection actions'], shortTitle: ['选文', 'Quote'], icon: '↗', order: 80, Observer, Panel });
-  ctx.effect?.(() => () => { captures.clear(); listeners.clear(); });
+  ctx.effect?.(() => () => { monitor.dispose(); captures.clear(); listeners.clear(); });
 }

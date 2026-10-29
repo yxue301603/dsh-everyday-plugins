@@ -37,6 +37,7 @@ test('tool names respond to composer width rather than the desktop viewport', as
 });
 
 test('all tools coexist, focus restores, and every modal stays within light and dark narrow viewports', async ({ page }) => {
+  await expect(page.locator('style[data-dsh-plugin="dsh-everyday-shared"]')).toHaveCount(1);
   for (const dark of [false, true]) {
     await page.evaluate(dark => document.body.classList.toggle('dark', dark), dark);
     for (const width of [1440, 390]) {
@@ -79,6 +80,35 @@ test('draft history survives accidental clearing and inserts without removing at
   await page.getByRole('button', { name: '插入当前草稿', exact: true }).click();
   await expect(editor).toHaveValue('现在的说明：需要保留的旧草稿');
   expect(await page.evaluate(() => window.__test.snapshot().attachmentIds)).toEqual(['image-1']);
+});
+
+test('native quote chips are scoped to the current composer and rechecked before replacement; sending stays read-only', async ({ page }) => {
+  const editor = page.getByRole('textbox', { name: 'Harness 草稿' });
+  await editor.fill('recorded plain text');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('dsh.everyday.draft-history.v1') ?? '')).toContain('recorded plain text');
+  await page.evaluate(() => {
+    window.__test.setInput({ attachmentIds: [] });
+    const neighbor = document.createElement('div'); neighbor.dataset.composerCard = ''; neighbor.id = 'other-composer';
+    neighbor.innerHTML = '<span data-composer-quote>another session quote</span>'; document.body.append(neighbor);
+  });
+  await open(page, 'dsh-draft-history');
+  await expect(current(page).getByRole('button', { name: '替换当前文本…', exact: true })).toBeEnabled();
+  await current(page).getByRole('button', { name: '替换当前文本…', exact: true }).click();
+  await page.evaluate(() => { const quote = document.createElement('span'); quote.dataset.composerQuote = ''; quote.textContent = 'native retained quotation'; document.querySelector('.host-composer').append(quote); });
+  await current(page).getByRole('button', { name: '确认', exact: true }).click();
+  await expect(current(page)).toContainText('当前含附件、引用或正在发送');
+  await expect(editor).toHaveValue('recorded plain text'); await close(page);
+  await open(page, 'dsh-draft-history');
+  await expect(current(page).getByRole('button', { name: '替换当前文本…', exact: true })).toBeDisabled();
+  await current(page).getByRole('button', { name: '插入当前草稿', exact: true }).click();
+  await expect(page.locator('.host-composer [data-composer-quote]')).toHaveText('native retained quotation');
+  await expect(editor).toHaveValue('recorded plain textrecorded plain text');
+  const before = await editor.inputValue();
+  await page.evaluate(() => window.__test.setInput({ phase: 'sending' }));
+  await open(page, 'dsh-draft-history');
+  await expect(current(page).getByRole('button', { name: '替换当前文本…', exact: true })).toBeDisabled();
+  await current(page).getByRole('button', { name: '插入当前草稿', exact: true }).click();
+  await expect(current(page)).toContainText('Draft changed or is busy'); await expect(editor).toHaveValue(before);
 });
 
 test('answer actions save only visible text and tags can be edited and searched', async ({ page }) => {

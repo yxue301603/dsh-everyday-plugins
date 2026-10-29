@@ -1,8 +1,45 @@
 # 验证说明
 
-## 2026-10-24–25 — 当前 0.1.1 验证
+## 2026-10-29 — 0.1.2 性能与新版兼容
 
-总包与七个新增插件为 **0.1.1**；既有快捷指令保持 **0.1.3**。本节是当前状态，下方 2026-10-21 的结果与哈希只对应历史 **0.1.0**，不作为本版通过凭据。
+本版总包和七个日常插件为 **0.1.2**；快捷指令保持 **0.1.3**。以下是本版真实结果；旧版本记录保留在后文，不作为本版通过依据。
+
+- `npm run check`：构建、**60 项数据与生命周期检查、20 个浏览器场景**及长对话性能门槛全部通过。
+- 1,002 个提问、约两千消息行的合成浏览器对比：旧版每次停滚 **1,002 次整页查询、499 次矩形读取**；本版 **0 次整页查询、1 次矩形读取**。闭目录的 30 次流式更新从 **60,120 次节点读取降到 30 次**（30 次均来自测试宿主本身）。
+- 阅读记忆通过独立的全量几何校验确认来源正确；真实键盘输入的完整文本保留。时间数据与可复现方法见 [性能说明](PERFORMANCE.md)，不将合成宿主计时当成所有真实对话的速度承诺。
+- 发行包安装验收：**两种形式通过**。使用最新 DSH alpha.2 的两个全新 profile，分别安装总包与八个独立包，核对版本、启用清单、客户端 SHA256、全部面板和单份共享样式。安装验证后只更新本说明和性能说明；发行前逐文件核对其他运行文件与测试包一致。
+
+安装报告为 `artifacts/install-results.json`，两种形式的页面、console 和请求错误均为 0；无模型调用或系统通知。该安装测试另从同版本官方文件加载原始模块引导脚本以避免本机连接拒绝，待测插件脚本和业务接口仍由真实 Host 提供。
+
+### 真实 DSH 运行时
+
+| DSH 版本 | 结果 | 重点覆盖 |
+| --- | --- | --- |
+| 0.2.1-rc.3 | **15 项通过** | 含真实滚轮记忆与自动滚动隔离 |
+| 0.2.1-rc.4 | **15 项通过** | 含真实滚轮记忆与自动滚动隔离 |
+| 0.2.2-alpha.2 | **16 项通过** | 含原生引用插入、保留及撤销 |
+
+最新公开预览版为 [0.2.2-alpha.2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2)，不是正式稳定版。官方 npm `latest`、`next`、`alpha` 渠道当日分别为 rc.2、rc.4、alpha.2；本版核验当前桌面 rc.3 及后两种新版。Web CLI 的 alpha.2 需要 Node ≥24.9，本轮使用 Node 24.19。
+
+原生验证使用独立随机 `.cache` profile、工作区与合成会话；不打开个人会话、不配置模型。三次最终报告的模型调用、系统通知、页面错误、console 错误及失败请求均为 **0**，各自创建的 Host 和无头浏览器均已关闭。
+
+本机环回 HTTP 曾出现间歇连接拒绝，失败运行没有计入通过。最终测试只将同版本官方 `dsh-web-frontend/dist/assets` 四个静态资源从安装文件加载；HTML、插件客户端、会话与文件 API、实时 WebSocket 均连接真实隔离宿主。测试没有重绘 DSH 界面或替换业务接口。
+
+alpha.2 的原生引用未发布到 `InputState.occurrences`，且草稿文本投影长度不等于编辑坐标。实测通过官方「引用文本」创建引用，再插入草稿历史、原生撤销后引用仍保留；含引用时禁用整段替换，并在确认时重新检查。新增 `sending` 阶段的只读保护由合成契约测试和官方状态声明交叉检查，没有为了测试真实发送消息。
+
+真实滚轮测试另追加 20 轮合成记录：程序定位不改变阅读记忆，实际滚轮停顿后保存正确原生 userSeq，后续程序自动滚动不会覆盖；不是以主动点击目录的保存动作冒充自动阅读记忆。
+
+报告位于忽略提交的 `artifacts/native-<DSH版本>-result.json`、`artifacts/performance-results.json`。本轮客户端 SHA256：`5f1edf5484024313cd295da990cdbc6cab1e3f3c8aa4e102ca89ddcfc4b2b6ac`。发行 `.tgz` 使用不同校验值，以 [v0.1.2 清单](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/SHA256SUMS.txt) 为准。
+
+### 复现原生检查
+
+`node scripts/test-native.mjs` 使用当前本机桌面运行时。可用 `DSH_NATIVE_EXECUTABLE`、`DSH_NATIVE_BIN` 指定另一份官方 CLI，`DSH_TEST_EXPECTED_VERSION` 校验其实际版本，`DSH_NATIVE_TEST_PORT` 指定独立环回端口；`DSH_TEST_BROWSER_EXECUTABLE` 指定后台浏览器。设置 `DSH_NATIVE_TEST_QUOTES=1` 会要求原生引用用例通过，仅对具备此功能的 alpha.2 启用。可选 `DSH_NATIVE_STATIC_DIR` 必须指向版本完全相同的官方前端 `dist`；报告明确记录该静态加载方式。普通插件用户不需要运行这些开发检查。
+
+**English:** 0.1.2 passed 60 model/lifecycle checks, 20 browser contracts and the long-chat performance gates. Native DSH rc.3 and rc.4 passed 15 checks each; alpha.2 passed 16, including actual native quote preservation and undo. Every final native run recorded zero model calls, notifications and page/console/request errors, with its own processes cleaned up. Native business APIs and WebSockets remain live; four unchanged official frontend assets were served from the matching installed files after intermittent Windows loopback failures. Sending-state protection is a contract check, not a real message submission. Both suite and eight-tool standalone installations passed on alpha.2, including client hashes and one shared stylesheet. Installation testing additionally loaded the unchanged official module bootstrap from its matching installed file; tested plugin scripts still came from the Host. Only verification/performance documentation changed after this package test; runtime contents are compared before publishing.
+
+## 2026-10-24–25 — 历史 0.1.1 验证
+
+总包与七个新增插件为 **0.1.1**；既有快捷指令保持 **0.1.3**。本节保留当时状态；下方 2026-10-21 的结果与哈希只对应历史 **0.1.0**。
 
 | 检查 | 当前结果 | 范围 |
 | --- | --- | --- |

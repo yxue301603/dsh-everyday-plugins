@@ -18,6 +18,27 @@ export function questionItems(snapshot) {
   }).sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
 }
 
+/** Chat keys keep their kind. Cache human content while assistant nodes stream. */
+export function createQuestionSelector() {
+  let order, keys = [], nodes = [], result = [];
+  let fallbackSnapshot, fallbackReady = false;
+  return snapshot => {
+    const chat = snapshot?.views?.get?.('chat') ?? snapshot;
+    if (!chat?.nodes?.get || !Array.isArray(chat.order)) {
+      if (fallbackReady && fallbackSnapshot === snapshot) return result;
+      fallbackSnapshot = snapshot; fallbackReady = true; order = undefined; keys = []; nodes = [];
+      result = questionItems(snapshot); return result;
+    }
+    fallbackReady = false;
+    const nextNodes = order === chat.order ? keys.map(key => chat.nodes.get(key)) : null;
+    if (nextNodes && nextNodes.every((node, index) => node === nodes[index])) return result;
+    const next = questionItems(chat);
+    order = chat.order; keys = next.map(item => item.key); nodes = keys.map(key => chat.nodes.get(key));
+    if (next.length !== result.length || next.some((item, index) => Object.keys(item).some(key => item[key] !== result[index][key]))) result = next;
+    return result;
+  };
+}
+
 export function filterQuestions(items, query) {
   const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return items.filter(item => terms.every(term => item.text.toLocaleLowerCase().includes(term)));

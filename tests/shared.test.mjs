@@ -27,6 +27,26 @@ test('safe insert collapses the draft selection and never calls destructive draf
   insertText(actions, ' + quote'); assert.equal(draft, 'keep selected text + quote'); assert.equal(spanSeen.start, spanSeen.end);
   assert.throws(() => insertText({ ...actions, insertText: () => false }, 'new text'), /Draft changed/);
 });
+
+test('unchanged documents skip parsing, storage writes and subscriber updates without losing other-tab changes', () => {
+  const values = browserStorage(); let validations = 0, writes = 0, changes = 0;
+  localStorage.setItem = (key, value) => { writes++; values.set(key, value); };
+  const store = createStore('cached', { text: 'a'.repeat(400000) }, value => { validations++; return value; });
+  store.subscribe(() => changes++);
+  const first = store.getSnapshot();
+  store.update(value => value);
+  assert.equal(validations, 2); assert.equal(writes, 1); // First update persists the initial document.
+  const persisted = store.getSnapshot();
+  for (let i = 0; i < 3; i++) store.update(value => value);
+  assert.equal(validations, 5); assert.equal(writes, 1); assert.equal(changes, 1);
+  assert.equal(store.getSnapshot(), persisted);
+  values.set('cached', JSON.stringify({ text: 'another tab' }));
+  store.update(value => ({ ...value, extra: true }));
+  assert.equal(validations, 7); assert.equal(store.getSnapshot().data.text, 'another tab');
+  values.set('cached', '{broken'); assert.throws(() => store.update(value => value));
+  assert.equal(values.get('cached'), '{broken'); assert.ok(store.getSnapshot().error);
+  assert.notEqual(first, persisted); store.dispose();
+});
 test('workspace identity preserves case on POSIX while normalizing Windows and UNC paths', () => {
   assert.equal(normalizeWorkspace('C:\\Projects\\ALPHA\\'), 'c:/projects/alpha');
   assert.notEqual(normalizeWorkspace('/tmp/Project'), normalizeWorkspace('/tmp/project'));

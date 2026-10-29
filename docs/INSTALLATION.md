@@ -42,27 +42,27 @@ https://github.com/yxue301603/dsh-everyday-plugins
 
 ## 固定版本：Release 安装包
 
-普通仓库地址跟随默认分支；需要明确固定版本时，使用 [v0.1.1 Release](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) 中的预构建 `.tgz`。发布资产包括总包、八个单插件包，以及 [SHA256SUMS.txt](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/SHA256SUMS.txt) 和 [packages.json](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/packages.json)；实际可下载文件以 Release 页面为准。总包与七个新增插件为 **0.1.1**，快捷指令仍为 **0.1.3**。
+普通仓库地址跟随默认分支；需要明确固定版本时，使用 [v0.1.2 Release](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.2) 中的预构建 `.tgz`。发布资产包括总包、八个单插件包，以及 [SHA256SUMS.txt](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/SHA256SUMS.txt) 和 [packages.json](https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/packages.json)；实际可下载文件以 Release 页面为准。总包与七个新增插件为 **0.1.2**，快捷指令仍为 **0.1.3**。
 
 在「插件 → 添加插件」中填写具体资产地址，例如整套：
 
 ```text
-https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-everyday-plugins-0.1.1.tgz
+https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/dsh-everyday-plugins-0.1.2.tgz
 ```
 
 只安装回答收藏的固定版本：
 
 ```text
-https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-answer-library-0.1.1.tgz
+https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/dsh-answer-library-0.1.2.tgz
 ```
 
-也可先从 Release 下载所需 `.tgz` 和 `SHA256SUMS.txt`，核对同名文件的 SHA256，再在「添加插件」中填写下载文件的**本地绝对路径**，例如 `C:\Downloads\dsh-answer-library-0.1.1.tgz`。Windows 可运行：
+也可先从 Release 下载所需 `.tgz` 和 `SHA256SUMS.txt`，核对同名文件的 SHA256，再在「添加插件」中填写下载文件的**本地绝对路径**，例如 `C:\Downloads\dsh-answer-library-0.1.2.tgz`。Windows 可运行：
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.1.tgz'
+Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.2.tgz'
 ```
 
-macOS/Linux 可运行 `shasum -a 256 dsh-answer-library-0.1.1.tgz`。将结果与清单中该文件的完整哈希逐字核对（十六进制大小写不影响结果）；不一致时重新下载，不使用该文件。`packages.json` 提供包名、版本与资产对应关系。此处使用固定版本的 `.tgz`，不依赖未验证的 Git tag 与子目录组合语法。
+macOS/Linux 可运行 `shasum -a 256 dsh-answer-library-0.1.2.tgz`。将结果与清单中该文件的完整哈希逐字核对（十六进制大小写不影响结果）；不一致时重新下载，不使用该文件。`packages.json` 提供包名、版本与资产对应关系。此处使用固定版本的 `.tgz`，不依赖未验证的 Git tag 与子目录组合语法。
 
 ## 已装快捷指令，如何换成整套
 
@@ -135,9 +135,9 @@ Choose **one** installation style:
 
 - Collection: paste `https://github.com/yxue301603/dsh-everyday-plugins` into **Plugins → Add plugin**.
 - Individual tools: paste a `https://github.com/yxue301603/dsh-everyday-plugins#path:/packages/plugin-name` URL from the table above. Each package works without the collection. Same-name standalone repositories remain compatibility sources.
-- Fixed version: use a prebuilt `.tgz` from [Release v0.1.1](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1). The collection and seven newer tools are **0.1.1**; Quick prompts remains **0.1.3**. The release includes nine package archives, `SHA256SUMS.txt` and `packages.json`; available assets are listed on the release page.
+- Fixed version: use a prebuilt `.tgz` from [Release v0.1.2](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.2). The collection and seven newer tools are **0.1.2**; Quick prompts remains **0.1.3**. The release includes nine package archives, `SHA256SUMS.txt` and `packages.json`; available assets are listed on the release page.
 
-For a fixed collection install, paste `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-everyday-plugins-0.1.1.tgz`. For Answer library, use `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.1/dsh-answer-library-0.1.1.tgz`. Alternatively, download the archive and checksum list, compare its full SHA256 using Windows `Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.1.tgz'` or macOS/Linux `shasum -a 256 dsh-answer-library-0.1.1.tgz`, then enter the archive's absolute local path in Add plugin. Hexadecimal letter case does not matter. Redownload a mismatching file. `packages.json` maps package names, versions and assets. These instructions do not assume an untested Git tag/subdirectory combination.
+For a fixed collection install, paste `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/dsh-everyday-plugins-0.1.2.tgz`. For Answer library, use `https://github.com/yxue301603/dsh-everyday-plugins/releases/download/v0.1.2/dsh-answer-library-0.1.2.tgz`. Alternatively, download the archive and checksum list, compare its full SHA256 using Windows `Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\Downloads\dsh-answer-library-0.1.2.tgz'` or macOS/Linux `shasum -a 256 dsh-answer-library-0.1.2.tgz`, then enter the archive's absolute local path in Add plugin. Hexadecimal letter case does not matter. Redownload a mismatching file. `packages.json` maps package names, versions and assets. These instructions do not assume an untested Git tag/subdirectory combination.
 
 Install, enable and reload when the host requests it. Never run the collection alongside duplicate standalone tools. On Desktop use the desktop application's own plugin manager; the Web CLI profile does not install into your Desktop profile.
 

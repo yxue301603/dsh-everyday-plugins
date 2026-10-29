@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { questionItems, filterQuestions, readingData } from './model.js';
+import { questionItems, filterQuestions, readingData, createQuestionSelector } from './model.js';
 
 test('reads native keyed Chat nodes rather than lossy legacy records', () => {
   const nodes = new Map([
@@ -41,4 +41,35 @@ test('reading state validates records and bounds to 100 sessions', () => {
   assert.equal(clean.bad, undefined);
   assert.equal(clean.s109.seq, 109);
   assert.deepEqual(readingData(null), {});
+});
+
+test('question selector reuses text and result identity across assistant streaming', () => {
+  let textReads = 0;
+  const user = { key: 'u', kind: 'user', data: { seq: 1, get content() { textReads++; return [{ type: 'text', text: 'Question' }]; } } };
+  const order = ['u', ...Array.from({ length: 4000 }, (_, index) => `a${index}`)];
+  let nodes = new Map(order.map(key => [key, key === 'u' ? user : { key, kind: 'assistant-step', data: {} }]));
+  const select = createQuestionSelector();
+  const initial = select({ nodes, order });
+  for (let tick = 0; tick < 200; tick++) {
+    nodes = new Map(nodes); nodes.set('a3999', { key: 'a3999', kind: 'assistant-step', data: { tick } });
+    assert.equal(select({ nodes, order }), initial);
+  }
+  assert.equal(textReads, 1);
+  nodes.set('u', { ...user, data: { seq: 1, content: [{ type: 'text', text: 'Edited question' }] } });
+  const edited = select({ nodes, order });
+  assert.notEqual(edited, initial);
+  assert.equal(edited[0].text, 'Edited question');
+  const appended = { key: 'u2', kind: 'user', data: { seq: 5000, content: [] } };
+  nodes.set('u2', appended);
+  assert.equal(select({ nodes, order: [...order, 'u2'] }).length, 2);
+});
+
+test('empty and legacy selector results are stable for native external-store hooks', () => {
+  const select = createQuestionSelector();
+  assert.equal(select(undefined), select(undefined));
+  const legacy = { nodes: [{ key: 'u', kind: 'user', seq: 1, content: [] }] };
+  const first = select(legacy);
+  assert.equal(first, select(legacy));
+  assert.equal(first.length, 1);
+  assert.equal(select(undefined).length, 0);
 });

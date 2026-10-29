@@ -1,4 +1,4 @@
-/* dsh-selection-actions v0.1.1 · MIT */
+/* dsh-selection-actions v0.1.2 · MIT */
 window.__ModuleLoader__.load({id:"dsh-selection-actions",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -138,14 +138,28 @@ function registerTool(ctx, spec) {
       if (event.target !== dialog.current) return;
       const rect = event.target.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
-    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current })))));
+    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current, composerElement: trigger.current?.closest("[data-composer-card]") })))));
   }
   ctx.effect(() => {
-    const node = document.createElement("style");
-    node.dataset.dshPlugin = id;
-    node.textContent = styles_default;
-    document.head.append(node);
-    return () => node.remove();
+    const key = /* @__PURE__ */ Symbol.for("dsh.everyday.styles");
+    const registry = document[key] ??= /* @__PURE__ */ new Map();
+    let entry = registry.get(styles_default);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement("style");
+      node.dataset.dshPlugin = "dsh-everyday-shared";
+      node.textContent = styles_default;
+      document.head.append(node);
+      entry = { node, users: 0 };
+      registry.set(styles_default, entry);
+    }
+    entry.users++;
+    return () => {
+      if (--entry.users === 0) {
+        entry.node.remove();
+        registry.delete(styles_default);
+        if (!registry.size) delete document[key];
+      }
+    };
   }, `${id}: shared styles`);
   ctx.slots.inject("conversation.input.left", () => ctx.slots.register({ name: "conversation.input.left", id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith("zh") ? 0 : 1] }, Launcher));
 }
@@ -214,55 +228,140 @@ function revealSelection(capture) {
   return true;
 }
 
+// src/monitor.js
+var excluded = 'input,textarea,[contenteditable="true"],dialog,[role="dialog"],.ed-dialog,.ed-overlay,[data-ed-selection-button]';
+var element2 = (node) => node?.nodeType === 1 ? node : node?.parentElement;
+function sameCapture(left, right) {
+  return left === right || !!left && !!right && left.sessionId === right.sessionId && left.row === right.row && left.text === right.text && left.tooLong === right.tooLong && left.range.startContainer === right.range.startContainer && left.range.startOffset === right.range.startOffset && left.range.endContainer === right.range.endContainer && left.range.endOffset === right.range.endOffset;
+}
+function createSelectionMonitor({ document: document2, window: window2, read, getCapture, publish, delay = 80 }) {
+  const watchers = /* @__PURE__ */ new Map();
+  let active = null, point = null, timer, attached = false;
+  function position(sessionId, next) {
+    if (active === sessionId && point?.left === next?.left && point?.top === next?.top) return;
+    if (active && active !== sessionId) for (const listener of watchers.get(active) ?? []) listener(null);
+    active = next ? sessionId : null;
+    point = next;
+    for (const listener of watchers.get(sessionId) ?? []) listener(next);
+  }
+  function hide() {
+    if (timer !== void 0) {
+      window2.clearTimeout(timer);
+      timer = void 0;
+    }
+    if (active) position(active, null);
+  }
+  function selectionChanged() {
+    const selection = window2.getSelection();
+    const range = selection?.rangeCount && !selection.isCollapsed ? selection.getRangeAt(0) : null;
+    const first = element2(range?.startContainer);
+    if (!first || first.closest(excluded)) {
+      hide();
+      return;
+    }
+    const sessionId = first.closest("[data-conversation-session]")?.getAttribute("data-conversation-session");
+    if (!watchers.has(sessionId)) {
+      hide();
+      return;
+    }
+    window2.clearTimeout(timer);
+    timer = window2.setTimeout(() => {
+      timer = void 0;
+      if (!watchers.has(sessionId)) return;
+      const next = read(sessionId);
+      if (!next) {
+        hide();
+        return;
+      }
+      const previous = getCapture(sessionId);
+      const unchanged = sameCapture(previous, next);
+      if (!unchanged) publish(sessionId, next);
+      if (unchanged && active === sessionId && point) return;
+      const rect = next.range.getBoundingClientRect();
+      if (!rect.width && !rect.height) {
+        hide();
+        return;
+      }
+      const top = rect.top >= 56 ? rect.top - 44 : rect.bottom + 8;
+      position(sessionId, { left: Math.max(12, Math.min(window2.innerWidth - 160, rect.left)), top: Math.max(12, Math.min(window2.innerHeight - 48, top)) });
+    }, delay);
+  }
+  function attach() {
+    if (attached) return;
+    attached = true;
+    document2.addEventListener("selectionchange", selectionChanged);
+    document2.addEventListener("scroll", hide, { capture: true, passive: true });
+    window2.addEventListener("blur", hide);
+    window2.addEventListener("resize", hide);
+  }
+  function detach() {
+    if (!attached) return;
+    hide();
+    attached = false;
+    document2.removeEventListener("selectionchange", selectionChanged);
+    document2.removeEventListener("scroll", hide, true);
+    window2.removeEventListener("blur", hide);
+    window2.removeEventListener("resize", hide);
+  }
+  return {
+    watch(sessionId, listener) {
+      if (!watchers.has(sessionId)) watchers.set(sessionId, /* @__PURE__ */ new Set());
+      watchers.get(sessionId).add(listener);
+      attach();
+      if (active === sessionId) listener(point);
+      return () => {
+        const subscriptions = watchers.get(sessionId);
+        subscriptions?.delete(listener);
+        if (!subscriptions?.size) {
+          if (active === sessionId) hide();
+          watchers.delete(sessionId);
+        }
+        if (!watchers.size) detach();
+      };
+    },
+    hide,
+    dispose() {
+      detach();
+      watchers.clear();
+    }
+  };
+}
+
 // src/client.jsx
 var name = "dsh-selection-actions";
 var inject = ["slots", "locale", "sessions"];
 function apply(ctx) {
   const captures = /* @__PURE__ */ new Map();
-  const listeners = /* @__PURE__ */ new Set();
-  const subscribe = (listener) => {
-    listeners.add(listener);
-    return () => listeners.delete(listener);
+  const listeners = /* @__PURE__ */ new Map();
+  const subscribe = (sessionId, listener) => {
+    if (!listeners.has(sessionId)) listeners.set(sessionId, /* @__PURE__ */ new Set());
+    const group = listeners.get(sessionId);
+    group.add(listener);
+    return () => {
+      group.delete(listener);
+      if (!group.size) listeners.delete(sessionId);
+    };
   };
   function publish(sessionId, capture) {
+    if (sameCapture(captures.get(sessionId) ?? null, capture)) return;
     if (capture) {
       captures.set(sessionId, capture);
       while (captures.size > 20) captures.delete(captures.keys().next().value);
     } else captures.delete(sessionId);
-    for (const listener of listeners) listener();
+    for (const listener of listeners.get(sessionId) ?? []) listener();
   }
+  const monitor = createSelectionMonitor({ document, window, read: readSelection, getCapture: (sessionId) => captures.get(sessionId) ?? null, publish });
   function useCapture(sessionId) {
-    return (0, import_react2.useSyncExternalStore)(subscribe, () => captures.get(sessionId) ?? null);
+    const listen = (0, import_react2.useCallback)((listener) => subscribe(sessionId, listener), [sessionId]);
+    return (0, import_react2.useSyncExternalStore)(listen, () => captures.get(sessionId) ?? null);
   }
   function Observer({ sessionId, openPanel }) {
     const t = useLocale(ctx);
     const capture = useCapture(sessionId);
     const [point, setPoint] = (0, import_react2.useState)(null);
     (0, import_react2.useEffect)(() => {
-      let timer;
-      const read = () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          const next = readSelection(sessionId);
-          if (next) {
-            publish(sessionId, next);
-            const rect = next.range.getBoundingClientRect();
-            const top = rect.top >= 56 ? rect.top - 44 : rect.bottom + 8;
-            setPoint({ left: Math.max(12, Math.min(innerWidth - 160, rect.left)), top: Math.max(12, Math.min(innerHeight - 48, top)) });
-          } else setPoint(null);
-        }, 80);
-      };
-      const hide = () => setPoint(null);
-      document.addEventListener("selectionchange", read);
-      document.addEventListener("scroll", hide, true);
-      window.addEventListener("blur", hide);
-      return () => {
-        clearTimeout(timer);
-        document.removeEventListener("selectionchange", read);
-        document.removeEventListener("scroll", hide, true);
-        window.removeEventListener("blur", hide);
-        captures.delete(sessionId);
-      };
+      setPoint(null);
+      return monitor.watch(sessionId, setPoint);
     }, [sessionId]);
     return openPanel && point && capture ? /* @__PURE__ */ import_react2.default.createElement(
       "button",
@@ -271,7 +370,7 @@ function apply(ctx) {
         "data-ed-selection-button": "",
         onPointerDown: (event) => event.preventDefault(),
         onClick: () => {
-          setPoint(null);
+          monitor.hide();
           openPanel();
         },
         style: { position: "fixed", ...point, zIndex: 900, padding: "7px 12px", borderRadius: 10, border: "1px solid var(--dsw-alias-border-l1, #777)", background: "var(--dsw-alias-bg-base, #252525)", color: "var(--dsw-alias-label-primary, #eee)", boxShadow: "0 4px 20px #0003", font: "inherit", cursor: "pointer" }
@@ -321,6 +420,7 @@ function apply(ctx) {
   }
   registerTool(ctx, { id: name, title: ["选中追问", "Selection actions"], shortTitle: ["选文", "Quote"], icon: "↗", order: 80, Observer, Panel });
   ctx.effect?.(() => () => {
+    monitor.dispose();
     captures.clear();
     listeners.clear();
   });

@@ -55,10 +55,21 @@ export function registerTool(ctx, spec) {
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
       }}>
         <div className="ed-header"><span className="ed-mark" aria-hidden="true">{icon}</span><div><h2>{t(...title)}</h2><span className="ed-caption">{t('DSH 日常工具 · 本地保存', 'DSH Everyday · Local tools')}</span></div><button type="button" className="ed-close" aria-label={t('关闭', 'Close')} onClick={close}>×</button></div>
-        <div className="ed-panel"><Boundary><Panel {...props} ctx={ctx} close={close} openPanel={openPanel} insertionSpan={captured.current} /></Boundary></div>
+        <div className="ed-panel"><Boundary><Panel {...props} ctx={ctx} close={close} openPanel={openPanel} insertionSpan={captured.current} composerElement={trigger.current?.closest('[data-composer-card]')} /></Boundary></div>
       </dialog>}
     </Boundary>;
   }
-  ctx.effect(() => { const node = document.createElement('style'); node.dataset.dshPlugin = id; node.textContent = styles; document.head.append(node); return () => node.remove(); }, `${id}: shared styles`);
+  ctx.effect(() => {
+    // Independent bundles share the same document; load identical CSS once.
+    const key = Symbol.for('dsh.everyday.styles');
+    const registry = document[key] ??= new Map();
+    let entry = registry.get(styles);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement('style'); node.dataset.dshPlugin = 'dsh-everyday-shared'; node.textContent = styles; document.head.append(node);
+      entry = { node, users: 0 }; registry.set(styles, entry);
+    }
+    entry.users++;
+    return () => { if (--entry.users === 0) { entry.node.remove(); registry.delete(styles); if (!registry.size) delete document[key]; } };
+  }, `${id}: shared styles`);
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({ name: 'conversation.input.left', id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith('zh') ? 0 : 1] }, Launcher));
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 — 2026-10-29
+
+- 修复长对话滚动及输入卡顿：目录关闭时不订阅、提取整段聊天；阅读位置仅在用户停滚后进行少量命中检测，避免每个问题各扫描一次整页。
+- 选文操作共用被动监听，光标移动和空闲滚动不触发重复选区处理；提醒只消费实时增量，不遍历完整事件历史。
+- 草稿仅订阅文本变化，停顿后在有界空闲期落盘，清空、切换、关页和卸载仍保留最后文本；未改变存储键和容量上限。
+- 本地数据未变化时复用已验证快照，跳过重复写入和通知；独立插件共用一份相同样式，正确计数卸载。
+- 适配新版 DSH 的原生引用与 `sending` 状态：含引用时禁用整段替换，确认前再次检查当前输入框；普通插入保留引用与原生撤销。
+- 新增长对话性能比较及回归检查；具体宿主版本、范围与结果见 [验证说明](docs/VERIFICATION.md) 和 [性能说明](docs/PERFORMANCE.md)。
+
+Fixes long-chat scrolling and typing stalls by removing closed-panel history work and quadratic DOM scans. Selection and task monitoring avoid idle/full-history work; draft persistence is deferred to bounded idle time without losing clear/switch/unload protection. Identical CSS and unchanged storage documents are reused. Native quote chips and the new sending state are protected during draft recovery. The suite and seven newer tools are 0.1.2; Quick prompts remains 0.1.3.
+
 ## 0.1.1 — 2026-10-24
 
 - 宽输入框显示「目录、草稿、收藏、文件、提醒、便笺、选文」短名称；窄输入框保留图标。显示方式跟随实际输入区宽度，适应分栏。

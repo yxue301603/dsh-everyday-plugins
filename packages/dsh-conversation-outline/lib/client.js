@@ -1,4 +1,4 @@
-/* dsh-conversation-outline v0.1.1 · MIT */
+/* dsh-conversation-outline v0.1.2 · MIT */
 window.__ModuleLoader__.load({id:"dsh-conversation-outline",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -157,14 +157,28 @@ function registerTool(ctx, spec) {
       if (event.target !== dialog.current) return;
       const rect = event.target.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
-    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current })))));
+    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current, composerElement: trigger.current?.closest("[data-composer-card]") })))));
   }
   ctx.effect(() => {
-    const node = document.createElement("style");
-    node.dataset.dshPlugin = id;
-    node.textContent = styles_default;
-    document.head.append(node);
-    return () => node.remove();
+    const key = /* @__PURE__ */ Symbol.for("dsh.everyday.styles");
+    const registry = document[key] ??= /* @__PURE__ */ new Map();
+    let entry = registry.get(styles_default);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement("style");
+      node.dataset.dshPlugin = "dsh-everyday-shared";
+      node.textContent = styles_default;
+      document.head.append(node);
+      entry = { node, users: 0 };
+      registry.set(styles_default, entry);
+    }
+    entry.users++;
+    return () => {
+      if (--entry.users === 0) {
+        entry.node.remove();
+        registry.delete(styles_default);
+        if (!registry.size) delete document[key];
+      }
+    };
   }, `${id}: shared styles`);
   ctx.slots.inject("conversation.input.left", () => ctx.slots.register({ name: "conversation.input.left", id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith("zh") ? 0 : 1] }, Launcher));
 }
@@ -173,14 +187,18 @@ function registerTool(ctx, spec) {
 function createStore(key, initial, validate = (data) => data) {
   const listeners = /* @__PURE__ */ new Set();
   let disposed = false;
+  let cachedRaw, cachedRead;
   const fresh = () => typeof initial === "function" ? initial() : structuredClone(initial);
   function read() {
     try {
       const raw = localStorage.getItem(key);
+      if (cachedRead && raw === cachedRaw) return cachedRead;
       if (raw !== null && raw.length > 2e6) throw new Error("Document too large");
       const data = validate(raw === null ? fresh() : JSON.parse(raw));
       if (!data || typeof data !== "object") throw new Error("Invalid document");
-      return { data, error: "" };
+      cachedRaw = raw;
+      cachedRead = { data, error: "" };
+      return cachedRead;
     } catch {
       return { data: fresh(), error: "无法读取本地数据 / Cannot read local data. Export or back up the original before resetting." };
     }
@@ -191,8 +209,11 @@ function createStore(key, initial, validate = (data) => data) {
   };
   const onStorage = (event) => {
     if (event.key === key || event.key === null) {
-      snapshot = read();
-      emit();
+      const next = read();
+      if (next !== snapshot) {
+        snapshot = next;
+        emit();
+      }
     }
   };
   window.addEventListener("storage", onStorage);
@@ -215,8 +236,17 @@ function createStore(key, initial, validate = (data) => data) {
         const next = validate(typeof change === "function" ? change(structuredClone(latest.data)) : change);
         const json = JSON.stringify(next);
         if (!next || typeof next !== "object" || json.length > 2e6) throw new Error("本地记录已达上限 / Local storage limit reached");
+        if (json === cachedRaw) {
+          if (snapshot !== latest) {
+            snapshot = latest;
+            emit();
+          }
+          return snapshot.data;
+        }
         localStorage.setItem(key, json);
         snapshot = { data: JSON.parse(json), error: "" };
+        cachedRaw = json;
+        cachedRead = snapshot;
         emit();
         return snapshot.data;
       } catch (error) {
@@ -227,9 +257,11 @@ function createStore(key, initial, validate = (data) => data) {
     },
     raw: () => localStorage.getItem(key) ?? "",
     reset() {
-      const next = validate(fresh());
-      localStorage.setItem(key, JSON.stringify(next));
-      snapshot = { data: next, error: "" };
+      const next = validate(fresh()), raw = JSON.stringify(next);
+      localStorage.setItem(key, raw);
+      snapshot = { data: JSON.parse(raw), error: "" };
+      cachedRaw = raw;
+      cachedRead = snapshot;
       emit();
     },
     dispose() {
@@ -265,6 +297,32 @@ function questionItems(snapshot) {
     }];
   }).sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
 }
+function createQuestionSelector() {
+  let order, keys = [], nodes = [], result = [];
+  let fallbackSnapshot, fallbackReady = false;
+  return (snapshot) => {
+    const chat = snapshot?.views?.get?.("chat") ?? snapshot;
+    if (!chat?.nodes?.get || !Array.isArray(chat.order)) {
+      if (fallbackReady && fallbackSnapshot === snapshot) return result;
+      fallbackSnapshot = snapshot;
+      fallbackReady = true;
+      order = void 0;
+      keys = [];
+      nodes = [];
+      result = questionItems(snapshot);
+      return result;
+    }
+    fallbackReady = false;
+    const nextNodes = order === chat.order ? keys.map((key) => chat.nodes.get(key)) : null;
+    if (nextNodes && nextNodes.every((node, index) => node === nodes[index])) return result;
+    const next = questionItems(chat);
+    order = chat.order;
+    keys = next.map((item) => item.key);
+    nodes = keys.map((key) => chat.nodes.get(key));
+    if (next.length !== result.length || next.some((item, index) => Object.keys(item).some((key) => item[key] !== result[index][key]))) result = next;
+    return result;
+  };
+}
 function filterQuestions(items, query) {
   const terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return items.filter((item) => terms.every((term) => item.text.toLocaleLowerCase().includes(term)));
@@ -274,61 +332,176 @@ function readingData(value) {
   return Object.fromEntries(Object.entries(value).filter(([key, mark]) => key.length < 256 && mark && typeof mark.key === "string" && mark.key.length < 512 && Number.isFinite(mark.seq) && Number.isFinite(mark.savedAt)).slice(-100));
 }
 
+// src/reader.js
+var ROW = "[data-chat-node-key],[data-chat-anchor-key],[data-message-seq],[data-seq]";
+var EXCLUDED = '.ed-dialog,[role="dialog"],input,textarea,[contenteditable="true"]';
+var element = (node) => node?.nodeType === 1 ? node : node?.parentElement;
+var keyOf = (row) => row?.getAttribute("data-chat-node-key") ?? row?.getAttribute("data-chat-anchor-key");
+function questionMark(node) {
+  const data = node?.data ?? node;
+  if (!node || !["user", "steering"].includes(node.kind) || data.source?.kind && data.source.kind !== "user") return null;
+  const seq = data.seq ?? node.anchorSeq;
+  if (!Number.isFinite(seq) || typeof node.key !== "string") return null;
+  return { key: node.key, seq, turn: node.location?.turn?.turn ?? data.turn };
+}
+function questionBefore(chat, key) {
+  chat = chat?.views?.get?.("chat") ?? chat;
+  if (!chat || !key) return null;
+  if (chat.nodes?.get && Array.isArray(chat.order)) {
+    const own = questionMark(chat.nodes.get(key));
+    if (own) return own;
+    for (let index = chat.order.indexOf(key) - 1; index >= 0; index--) {
+      const mark = questionMark(chat.nodes.get(chat.order[index]));
+      if (mark) return mark;
+    }
+    return null;
+  }
+  const nodes = Array.isArray(chat.nodes) ? chat.nodes : chat.legacy?.nodes ?? [];
+  for (let index = nodes.findIndex((node) => node.key === key); index >= 0; index--) {
+    const mark = questionMark(nodes[index]);
+    if (mark) return mark;
+  }
+  return null;
+}
+function readingRow(scrollport, document2, viewportHeight) {
+  const bounds = scrollport.getBoundingClientRect();
+  const top = Math.max(0, bounds.top), bottom = Math.min(viewportHeight, bounds.bottom);
+  if (bottom <= top || bounds.width <= 0) return null;
+  const line = top + (bottom - top) * 0.45;
+  const x = Math.max(0, Math.min(document2.documentElement.clientWidth - 1, bounds.left + bounds.width * 0.5));
+  for (const offset of [0, -12, 12, -32, 32]) {
+    const y = Math.max(top, Math.min(bottom - 1, line + offset));
+    for (const hit of document2.elementsFromPoint?.(x, y) ?? []) {
+      const row = hit.closest?.(ROW);
+      if (row && scrollport.contains(row) && !row.closest('[hidden],[aria-hidden="true"]')) return row;
+    }
+  }
+  const rows = [...scrollport.querySelectorAll('[data-chat-flow-kind="user"],[data-chat-flow-kind="steering"]')];
+  let low = 0, high = rows.length - 1, found = null, budget = 20;
+  while (low <= high && budget > 0) {
+    const middle = low + high >> 1;
+    let probe = middle, rect;
+    while (probe <= high && budget-- > 0) {
+      const row = rows[probe];
+      if (row.isConnected && !row.closest('[hidden],[aria-hidden="true"]')) {
+        rect = row.getBoundingClientRect();
+        if (rect.height > 0 && rect.width > 0) break;
+      }
+      probe++;
+      rect = null;
+    }
+    if (!rect) {
+      high = middle - 1;
+      continue;
+    }
+    if (rect.top <= line) {
+      found = rows[probe];
+      low = probe + 1;
+    } else high = middle - 1;
+  }
+  return found;
+}
+function createReadingMonitor({ document: document2, window: window2, getChat, save, delay = 450, now = Date.now }) {
+  const sessions = /* @__PURE__ */ new Map();
+  let intent = null, timer, attached = false;
+  const scopeFor = (target) => {
+    const node = element(target);
+    if (!node || node.closest(EXCLUDED)) return null;
+    const scope = node.closest("[data-conversation-session]");
+    return sessions.has(scope?.getAttribute("data-conversation-session")) ? scope : null;
+  };
+  function recordIntent(event) {
+    if (element(event.target)?.closest(EXCLUDED)) {
+      if (event.type === "pointerdown" || event.type === "keydown") {
+        window2.clearTimeout(timer);
+        timer = void 0;
+        intent = null;
+      }
+      return;
+    }
+    if (event.type === "keydown" && !["PageUp", "PageDown", "Home", "End", "ArrowUp", "ArrowDown", " "].includes(event.key)) return;
+    const scope = scopeFor(event.target) ?? (event.type === "keydown" && intent?.scope?.isConnected ? intent.scope : null);
+    if (scope) intent = { scope, at: now() };
+  }
+  function scroll(event) {
+    const port = element(event.target);
+    if (!port?.matches("[data-conversation-scroll]")) return;
+    const scope = scopeFor(port);
+    if (!scope || scope !== intent?.scope || now() - intent.at > 3e3) return;
+    window2.clearTimeout(timer);
+    timer = window2.setTimeout(() => {
+      timer = void 0;
+      if (!port.isConnected || scope !== intent?.scope || now() - intent.at > 3500) return;
+      intent = null;
+      const sessionId = scope.getAttribute("data-conversation-session");
+      if (!sessions.has(sessionId)) return;
+      const row = readingRow(port, document2, window2.innerHeight);
+      if (!row || row.closest("[data-conversation-session]") !== scope) return;
+      try {
+        const mark = questionBefore(getChat(sessionId), keyOf(row));
+        if (mark) save(sessionId, { ...mark, savedAt: now() });
+      } catch {
+      }
+    }, delay);
+  }
+  function attach() {
+    if (attached) return;
+    attached = true;
+    for (const type of ["wheel", "touchmove", "pointerdown", "keydown"]) document2.addEventListener(type, recordIntent, { capture: true, passive: true });
+    document2.addEventListener("scroll", scroll, { capture: true, passive: true });
+  }
+  function detach() {
+    if (!attached) return;
+    attached = false;
+    window2.clearTimeout(timer);
+    intent = null;
+    for (const type of ["wheel", "touchmove", "pointerdown", "keydown"]) document2.removeEventListener(type, recordIntent, true);
+    document2.removeEventListener("scroll", scroll, true);
+  }
+  return {
+    watch(sessionId) {
+      sessions.set(sessionId, (sessions.get(sessionId) ?? 0) + 1);
+      attach();
+      return () => {
+        const count = sessions.get(sessionId) ?? 0;
+        if (count > 1) sessions.set(sessionId, count - 1);
+        else sessions.delete(sessionId);
+        if (!sessions.size) detach();
+      };
+    },
+    dispose() {
+      sessions.clear();
+      detach();
+    }
+  };
+}
+
 // src/client.jsx
 var name = "dsh-conversation-outline";
-var inject = ["slots", "locale", "sessions"];
+var inject = ["slots", "locale", "sessions", "uiConversation"];
 function apply(ctx) {
   const marks = createStore("dsh.everyday.outline.v1", {}, readingData);
+  const reader = createReadingMonitor({
+    document,
+    window,
+    getChat: (sessionId) => ctx.uiConversation.binding(sessionId).target("chat").getSnapshot(),
+    save(sessionId, mark) {
+      const old = marks.getSnapshot().data[sessionId];
+      if (old?.key === mark.key && old?.seq === mark.seq && old?.turn === mark.turn) return;
+      try {
+        marks.update((previous) => ({ ...previous, [sessionId]: mark }));
+      } catch {
+      }
+    }
+  });
   function useQuestions(props) {
     const useSnapshot = props.useChat ?? props.useConversation;
-    const snapshot = useSnapshot ? useSnapshot((value) => value) : void 0;
-    return (0, import_react2.useMemo)(() => questionItems(snapshot), [snapshot]);
+    const selector = (0, import_react2.useRef)(null);
+    if (!selector.current) selector.current = createQuestionSelector();
+    return useSnapshot ? useSnapshot(selector.current) : [];
   }
-  function Observer(props) {
-    const items = useQuestions(props);
-    const latest = (0, import_react2.useRef)(items);
-    latest.current = items;
-    (0, import_react2.useEffect)(() => {
-      let timer;
-      let readerIntent = 0;
-      const intent = (event) => {
-        if (!(event.target instanceof Element) || event.target.closest('.ed-dialog,input,textarea,[contenteditable="true"]')) return;
-        if (event.type !== "keydown" || ["PageUp", "PageDown", "Home", "End", "ArrowUp", "ArrowDown", " "].includes(event.key)) readerIntent = Date.now();
-      };
-      const sample = (event) => {
-        if (!(event.target instanceof Element) || event.target.closest(".ed-dialog") || Date.now() - readerIntent > 3e3) return;
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          const candidates = latest.current.map((item) => ({ item, row: findChatAnchor({ ...item, sessionId: props.sessionId }) })).filter(({ row }) => row && row.getClientRects().length);
-          const match = candidates.findLast(({ row }) => {
-            const rect = row.getBoundingClientRect();
-            return rect.top < innerHeight * 0.45;
-          });
-          if (match) try {
-            marks.update((previous) => ({ ...previous, [props.sessionId]: {
-              key: match.item.key,
-              seq: match.item.seq,
-              turn: match.item.turn,
-              savedAt: Date.now()
-            } }));
-          } catch {
-          }
-        }, 450);
-      };
-      document.addEventListener("wheel", intent, { passive: true, capture: true });
-      document.addEventListener("touchmove", intent, { passive: true, capture: true });
-      document.addEventListener("pointerdown", intent, true);
-      document.addEventListener("keydown", intent, true);
-      document.addEventListener("scroll", sample, true);
-      return () => {
-        document.removeEventListener("scroll", sample, true);
-        document.removeEventListener("wheel", intent, true);
-        document.removeEventListener("touchmove", intent, true);
-        document.removeEventListener("pointerdown", intent, true);
-        document.removeEventListener("keydown", intent, true);
-        clearTimeout(timer);
-      };
-    }, [props.sessionId]);
+  function Observer({ sessionId }) {
+    (0, import_react2.useEffect)(() => reader.watch(sessionId), [sessionId]);
     return null;
   }
   function Panel(props) {
@@ -342,6 +515,7 @@ function apply(ctx) {
     const [busy, setBusy] = (0, import_react2.useState)(false);
     const session = props.useSession ? props.useSession((value) => value) : void 0;
     const filtered = (0, import_react2.useMemo)(() => filterQuestions(items, query), [items, query]);
+    const numbers = (0, import_react2.useMemo)(() => new Map(items.map((item, index) => [item.key, index + 1])), [items]);
     const face = () => ctx.sessions.binding?.(sessionId)?.session;
     async function jump(item) {
       setBusy(true);
@@ -373,10 +547,13 @@ function apply(ctx) {
         setBusy(false);
       }
     }
-    return /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t("只看自己提过的问题，快速回到上下文。", "Find your questions and return to their context.")), mark && /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy, onClick: () => jump(mark) }, t("继续上次阅读", "Resume reading"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ed-field" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-label" }, t("搜索提问", "Search questions")), /* @__PURE__ */ import_react2.default.createElement("input", { autoFocus: true, value: query, onChange: (event) => setQuery(event.target.value), placeholder: t("输入关键词，空格分隔可同时匹配", "Keywords; separate with spaces to match all") })), (error || notice) && /* @__PURE__ */ import_react2.default.createElement(Notice, null, notice || t("阅读位置暂时无法保存。", "Reading positions could not be saved.")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between" } }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, filtered.length, " / ", items.length, " ", t("条已加载提问", "loaded questions")), /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy || session?.hasMore === false || session?.loadingOlder, onClick: loadOlder }, busy ? t("处理中…", "Working…") : t("加载更早消息", "Load earlier"))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-list" }, filtered.length === 0 ? /* @__PURE__ */ import_react2.default.createElement(Empty, null, query ? t("没有匹配的提问，可尝试加载更早消息。", "No matching questions. Try loading earlier messages.") : t("当前还没有已加载的提问。", "No questions loaded in this chat yet.")) : filtered.map((item, index) => /* @__PURE__ */ import_react2.default.createElement("button", { className: "ed-card", type: "button", key: item.key, disabled: busy, onClick: () => jump(item), style: { width: "100%", textAlign: "start", cursor: "pointer", background: "var(--ed-bg)", color: "var(--ed-text)" } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between", marginTop: 0 } }, /* @__PURE__ */ import_react2.default.createElement("strong", null, t("提问", "Question"), " ", items.indexOf(item) + 1, item.steering ? t(" · 补充", " · Follow-up") : ""), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, item.time ? new Date(item.time).toLocaleString() : "")), /* @__PURE__ */ import_react2.default.createElement("p", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: "8px 0 0", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 4, overflow: "hidden" } }, item.text || t("图片或文件提问", "Image or file question"))))), /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("关键词搜索覆盖已加载的提问；不自动拉取整段历史，也不发送消息。阅读位置仅保存在当前设备。", "Search covers loaded questions. History is fetched only on request. Reading positions stay on this device.")));
+    return /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t("只看自己提过的问题，快速回到上下文。", "Find your questions and return to their context.")), mark && /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy, onClick: () => jump(mark) }, t("继续上次阅读", "Resume reading"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ed-field" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-label" }, t("搜索提问", "Search questions")), /* @__PURE__ */ import_react2.default.createElement("input", { autoFocus: true, value: query, onChange: (event) => setQuery(event.target.value), placeholder: t("输入关键词，空格分隔可同时匹配", "Keywords; separate with spaces to match all") })), (error || notice) && /* @__PURE__ */ import_react2.default.createElement(Notice, null, notice || t("阅读位置暂时无法保存。", "Reading positions could not be saved.")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between" } }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, filtered.length, " / ", items.length, " ", t("条已加载提问", "loaded questions")), /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: busy || session?.hasMore === false || session?.loadingOlder, onClick: loadOlder }, busy ? t("处理中…", "Working…") : t("加载更早消息", "Load earlier"))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-list" }, filtered.length === 0 ? /* @__PURE__ */ import_react2.default.createElement(Empty, null, query ? t("没有匹配的提问，可尝试加载更早消息。", "No matching questions. Try loading earlier messages.") : t("当前还没有已加载的提问。", "No questions loaded in this chat yet.")) : filtered.map((item, index) => /* @__PURE__ */ import_react2.default.createElement("button", { className: "ed-card", type: "button", key: item.key, disabled: busy, onClick: () => jump(item), style: { width: "100%", textAlign: "start", cursor: "pointer", background: "var(--ed-bg)", color: "var(--ed-text)" } }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-actions", style: { justifyContent: "space-between", marginTop: 0 } }, /* @__PURE__ */ import_react2.default.createElement("strong", null, t("提问", "Question"), " ", numbers.get(item.key), item.steering ? t(" · 补充", " · Follow-up") : ""), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, item.time ? new Date(item.time).toLocaleString() : "")), /* @__PURE__ */ import_react2.default.createElement("p", { style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere", margin: "8px 0 0", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 4, overflow: "hidden" } }, item.text || t("图片或文件提问", "Image or file question"))))), /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("关键词搜索覆盖已加载的提问；不自动拉取整段历史，也不发送消息。阅读位置仅保存在当前设备。", "Search covers loaded questions. History is fetched only on request. Reading positions stay on this device.")));
   }
   registerTool(ctx, { id: name, title: ["对话目录", "Chat outline"], shortTitle: ["目录", "Outline"], icon: "☷", order: 20, Panel, Observer });
-  ctx.effect?.(() => () => marks.dispose());
+  ctx.effect?.(() => () => {
+    reader.dispose();
+    marks.dispose();
+  });
 }
 
 return module.exports;}});

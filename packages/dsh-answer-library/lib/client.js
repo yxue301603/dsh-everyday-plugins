@@ -1,4 +1,4 @@
-/* dsh-answer-library v0.1.1 · MIT */
+/* dsh-answer-library v0.1.2 · MIT */
 window.__ModuleLoader__.load({id:"dsh-answer-library",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -182,14 +182,28 @@ function registerTool(ctx, spec) {
       if (event.target !== dialog.current) return;
       const rect = event.target.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
-    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current })))));
+    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current, composerElement: trigger.current?.closest("[data-composer-card]") })))));
   }
   ctx.effect(() => {
-    const node = document.createElement("style");
-    node.dataset.dshPlugin = id;
-    node.textContent = styles_default;
-    document.head.append(node);
-    return () => node.remove();
+    const key = /* @__PURE__ */ Symbol.for("dsh.everyday.styles");
+    const registry = document[key] ??= /* @__PURE__ */ new Map();
+    let entry = registry.get(styles_default);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement("style");
+      node.dataset.dshPlugin = "dsh-everyday-shared";
+      node.textContent = styles_default;
+      document.head.append(node);
+      entry = { node, users: 0 };
+      registry.set(styles_default, entry);
+    }
+    entry.users++;
+    return () => {
+      if (--entry.users === 0) {
+        entry.node.remove();
+        registry.delete(styles_default);
+        if (!registry.size) delete document[key];
+      }
+    };
   }, `${id}: shared styles`);
   ctx.slots.inject("conversation.input.left", () => ctx.slots.register({ name: "conversation.input.left", id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith("zh") ? 0 : 1] }, Launcher));
 }
@@ -198,14 +212,18 @@ function registerTool(ctx, spec) {
 function createStore(key, initial, validate = (data) => data) {
   const listeners = /* @__PURE__ */ new Set();
   let disposed = false;
+  let cachedRaw, cachedRead;
   const fresh = () => typeof initial === "function" ? initial() : structuredClone(initial);
   function read() {
     try {
       const raw = localStorage.getItem(key);
+      if (cachedRead && raw === cachedRaw) return cachedRead;
       if (raw !== null && raw.length > 2e6) throw new Error("Document too large");
       const data = validate(raw === null ? fresh() : JSON.parse(raw));
       if (!data || typeof data !== "object") throw new Error("Invalid document");
-      return { data, error: "" };
+      cachedRaw = raw;
+      cachedRead = { data, error: "" };
+      return cachedRead;
     } catch {
       return { data: fresh(), error: "无法读取本地数据 / Cannot read local data. Export or back up the original before resetting." };
     }
@@ -216,8 +234,11 @@ function createStore(key, initial, validate = (data) => data) {
   };
   const onStorage = (event) => {
     if (event.key === key || event.key === null) {
-      snapshot = read();
-      emit();
+      const next = read();
+      if (next !== snapshot) {
+        snapshot = next;
+        emit();
+      }
     }
   };
   window.addEventListener("storage", onStorage);
@@ -240,8 +261,17 @@ function createStore(key, initial, validate = (data) => data) {
         const next = validate(typeof change === "function" ? change(structuredClone(latest.data)) : change);
         const json = JSON.stringify(next);
         if (!next || typeof next !== "object" || json.length > 2e6) throw new Error("本地记录已达上限 / Local storage limit reached");
+        if (json === cachedRaw) {
+          if (snapshot !== latest) {
+            snapshot = latest;
+            emit();
+          }
+          return snapshot.data;
+        }
         localStorage.setItem(key, json);
         snapshot = { data: JSON.parse(json), error: "" };
+        cachedRaw = json;
+        cachedRead = snapshot;
         emit();
         return snapshot.data;
       } catch (error) {
@@ -252,9 +282,11 @@ function createStore(key, initial, validate = (data) => data) {
     },
     raw: () => localStorage.getItem(key) ?? "",
     reset() {
-      const next = validate(fresh());
-      localStorage.setItem(key, JSON.stringify(next));
-      snapshot = { data: next, error: "" };
+      const next = validate(fresh()), raw = JSON.stringify(next);
+      localStorage.setItem(key, raw);
+      snapshot = { data: JSON.parse(raw), error: "" };
+      cachedRaw = raw;
+      cachedRead = snapshot;
       emit();
     },
     dispose() {

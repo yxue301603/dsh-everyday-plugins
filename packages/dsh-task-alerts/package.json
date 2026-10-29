@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-alerts",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：区分完成、待确认与失败，后台提醒并返回会话。",
   "license": "MIT",

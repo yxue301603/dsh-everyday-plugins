@@ -1,6 +1,6 @@
 {
   "name": "dsh-turn-files",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：按轮次查看生成或修改的文件，复制路径并预览。",
   "license": "MIT",

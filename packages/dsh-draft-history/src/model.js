@@ -35,6 +35,6 @@ export function entriesFor(data, id, now = Date.now()) {
   return session?.entries.filter(entry => entry.at >= now - LIMITS.age) ?? [];
 }
 
-export function replacementAllowed(input) {
-  return input?.phase === 'plain' && !input.claim && (input.draft?.length ?? 0) <= LIMITS.text && !(input.occurrences?.length) && !(input.attachmentIds?.length);
+export function replacementAllowed(input, hasSemanticQuote = false) {
+  return !hasSemanticQuote && input?.phase === 'plain' && !input.claim && (input.draft?.length ?? 0) <= LIMITS.text && !(input.occurrences?.length) && !(input.attachmentIds?.length);
 }

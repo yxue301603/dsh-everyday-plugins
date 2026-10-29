@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { registerTool, useLocale, Button, Empty, Notice, useExternalStore } from '../shared/ui.jsx';
 import { createStore } from '../shared/storage.js';
-import { endingKind, initialAlerts, liveEnds, normalizeAlerts, shouldNotify } from './model.js';
+import { createAlertEventCursor, endingKind, initialAlerts, normalizeAlerts, shouldNotify } from './model.js';
 export const name = 'dsh-task-alerts';
 export const inject = ['slots', 'locale', 'sessions', 'uiSession', 'uiWorkspace'];
 export function apply(ctx) {
@@ -10,6 +10,7 @@ export function apply(ctx) {
   const started = Date.now();
   const running = new Map(); const pending = new Map(); const subscriptions = new Map(); const timers = new Map(); const lastEnd = new Map();
   const notifications = new Set();
+  let previousCatalog = null, previousPending = null;
   const word = (zh, en) => /^zh/i.test(String(ctx.locale.getSnapshot()?.active)) ? zh : en;
   const label = kind => kind === 'completed' ? word('任务已完成', 'Task completed') : kind === 'pending' ? word('等待你的确认', 'Your confirmation is needed') : kind === 'failed' ? word('任务未能完成', 'Task failed') : kind === 'ended' ? word('任务已结束，请查看结果', 'Task ended; review the result') : word('任务已停止', 'Task stopped');
   function publish(sessionId, kind, key, detail = '') {
@@ -30,26 +31,29 @@ export function apply(ctx) {
     } catch { /* In-app history remains available when the host refuses native notifications. */ }
   }
   function observeEvents(sessionId, binding) {
-    let watermark = binding.eventSource.getSnapshot().entries.reduce((max, entry) => Math.max(max, (entry.event ?? entry).seq ?? 0), 0);
-    return binding.eventSource.subscribe(() => {
+    const cursor = createAlertEventCursor(binding.eventSource.getSnapshot(), started);
+    const dispose = binding.eventSource.subscribe(() => {
       const snapshot = binding.eventSource.getSnapshot();
-      const ends = liveEnds(snapshot, started, watermark);
-      const entries = snapshot.change?.entries ?? [];
-      for (const entry of entries) watermark = Math.max(watermark, (entry.event ?? entry).seq ?? 0);
-      for (const event of ends) {
+      for (const event of cursor.advance(snapshot)) {
         lastEnd.set(sessionId, { time: event.time, seq: event.seq, turn: event.data.turn });
         clearTimeout(timers.get(sessionId)); timers.delete(sessionId);
         publish(sessionId, endingKind(event.data.reason), `turn:${event.data.turn}`, event.data.reason?.kind === 'error' ? String(event.data.reason.error?.message ?? '').slice(0, 300) : '');
       }
     });
+    return { cursor, dispose };
   }
   function reconcile(initial = false) {
     const list = ctx.sessions.list.getSnapshot();
+    const beforeCatalog = previousCatalog;
+    if (list.byId === beforeCatalog) return;
+    previousCatalog = list.byId;
     for (const [sessionId, summary] of Object.entries(list.byId ?? {})) {
+      // Unretained, unchanged sessions cannot have acquired a new binding without a catalog publication.
+      if (beforeCatalog?.[sessionId] === summary && running.has(sessionId) && !subscriptions.has(sessionId)) continue;
       const before = running.get(sessionId);
       const next = summary.running === true;
       if (next && !before?.value) lastEnd.delete(sessionId);
-      running.set(sessionId, { value: next, since: next && !before?.value ? Date.now() : before?.since ?? started });
+      if (!before || before.value !== next) running.set(sessionId, { value: next, since: next ? Date.now() : before?.since ?? started });
       if (!initial && before?.value && !next) {
         clearTimeout(timers.get(sessionId));
         timers.set(sessionId, setTimeout(() => {
@@ -57,15 +61,14 @@ export function apply(ctx) {
           const end = lastEnd.get(sessionId);
           if (running.get(sessionId)?.value || (end && end.time >= before.since)) return;
           // No retained history is opened just to monitor another conversation.
-          const entries = ctx.sessions.binding(sessionId)?.eventSource.getSnapshot().entries ?? [];
-          const latestStart = entries.map(entry => entry.event ?? entry).findLast(event => event.type === 'turn/start');
-          publish(sessionId, 'ended', latestStart ? `turn:${latestStart.data.turn}` : `status:${summary.updatedAt ?? before.since}`);
+          const turn = subscriptions.get(sessionId)?.cursor.turn;
+          publish(sessionId, 'ended', turn ? `turn:${turn}` : `status:${summary.updatedAt ?? before.since}`);
         }, 800));
       }
       const binding = ctx.sessions.binding(sessionId);
       const existing = subscriptions.get(sessionId);
       if (binding && existing?.binding !== binding) {
-        existing?.dispose(); subscriptions.set(sessionId, { binding, dispose: observeEvents(sessionId, binding) });
+        existing?.dispose(); subscriptions.set(sessionId, { binding, ...observeEvents(sessionId, binding) });
       } else if (!binding && existing) { existing.dispose(); subscriptions.delete(sessionId); }
     }
     for (const sessionId of running.keys()) if (!list.byId?.[sessionId]) {
@@ -77,7 +80,8 @@ export function apply(ctx) {
   const status = ctx.get?.('uiSession')?.sessionStatus;
   function observePending(initial = false) {
     const snapshot = status?.getSnapshot();
-    if (!(snapshot instanceof Map)) return;
+    if (!(snapshot instanceof Map) || snapshot === previousPending) return;
+    previousPending = snapshot;
     for (const [sessionId, value] of snapshot) {
       const key = value.pendingInteraction?.key;
       const previous = pending.get(sessionId);

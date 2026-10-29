@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LIMITS, initial, normalize, remember, entriesFor, replacementAllowed } from './model.js';
 
+test('native quote nodes and the new sending phase disable full-text replacement', () => {
+  const input = { draft: 'clipboard text', phase: 'plain', attachmentIds: [], occurrences: [] };
+  assert.equal(replacementAllowed(input), true);
+  assert.equal(replacementAllowed(input, true), false);
+  assert.equal(replacementAllowed({ ...input, phase: 'sending' }), false);
+});
+
 test('draft snapshots stay isolated, deduplicate and preserve pre-clear text', () => {
   const now = Date.now();
   let data = remember(initial, 'first', 'before clear', now);

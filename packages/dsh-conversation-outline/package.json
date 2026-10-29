@@ -1,6 +1,6 @@
 {
   "name": "dsh-conversation-outline",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：搜索用户提问，跳转原文并保存阅读位置。",
   "license": "MIT",

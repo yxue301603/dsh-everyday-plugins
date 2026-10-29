@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, realpath, writeFile, access } from 'node:fs/promises';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import net from 'node:net';
@@ -154,15 +154,41 @@ async function runMode(mode, packages) {
       Object.defineProperty(window, 'Notification', { value: InertNotification, configurable: true });
     });
     page = await context.newPage();
+    if (process.env.DSH_NATIVE_STATIC_DIR) {
+      const staticDir = resolve(process.env.DSH_NATIVE_STATIC_DIR);
+      const frontend = JSON.parse(await readFile(resolve(staticDir, '..', 'package.json'), 'utf8'));
+      assert.equal(frontend.name, '@deepseek-ai/dsh-web-frontend'); assert.equal(frontend.version, expectedVersion);
+      info.staticAssetTransport = { source: 'official installed frontend files', version: frontend.version, count: 0, hostApisAndWebSocket: 'live' };
+      const moduleRoot = resolve(staticDir, '..', '..', 'dsh-client-modules');
+      const moduleManifest = JSON.parse(await readFile(resolve(moduleRoot, 'package.json'), 'utf8'));
+      assert.equal(moduleManifest.name, '@deepseek-ai/dsh-client-modules'); assert.equal(moduleManifest.version, expectedVersion);
+      const bootstrapBytes = await readFile(resolve(moduleRoot, 'lib', 'client.js'));
+      await page.route('**/plugins/@deepseek-ai/dsh-client-modules/client.js*', async route => {
+        if (new URL(route.request().url()).origin !== browserOrigin) return route.continue();
+        info.staticAssetTransport.officialModuleBootstrap = true;
+        await route.fulfill({ body: bootstrapBytes, contentType: 'text/javascript' });
+      });
+      await page.route('**/assets/**', async route => {
+        const url = new URL(route.request().url());
+        if (url.origin !== browserOrigin || !url.pathname.startsWith('/assets/')) return route.continue();
+        const file = resolve(staticDir, '.' + decodeURIComponent(url.pathname)), inside = relative(staticDir, file);
+        assert(inside && inside !== '..' && !inside.startsWith(`..${sep}`) && !isAbsolute(inside));
+        let bytes; try { bytes = await readFile(file); } catch (error) { if (error.code === 'ENOENT') return route.continue(); throw error; }
+        const contentType = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.wasm': 'application/wasm' }[extname(file)] ?? 'application/octet-stream';
+        info.staticAssetTransport.count++; await route.fulfill({ body: bytes, contentType });
+      });
+    }
     page.on('pageerror', error => info.pageerrors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') info.consoleErrors.push(message.text()); });
+    info.failedRequests = [];
+    page.on('requestfailed', request => info.failedRequests.push({ url: safeLogs(request.url()), failure: request.failure() }));
     const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(new RegExp(`http://127\\.0\\.0\\.1:${port}[^\\s]*`, 'g')) ?? [];
     await page.goto((urls.at(-1) ?? `${origin}/`).replace(origin, browserOrigin));
     for (let attempt = 0; attempt < 15; attempt++) {
       await page.waitForTimeout(300);
       for (const label of ['继续', '稍后配置', 'Configure later']) {
         const button = page.getByRole('button', { name: label, exact: true }).first();
-        if (await button.isVisible() && await button.isEnabled()) await button.click({ timeout: 1000 }).catch(() => {});
+        if (await button.isVisible()) await button.click({ timeout: 1000 }).catch(() => {});
       }
       const welcome = page.getByRole('dialog', { name: '开始使用', exact: true });
       if (await welcome.isVisible()) await welcome.getByRole('button', { name: '关闭', exact: true }).click({ timeout: 1000 }).catch(() => {});
@@ -171,6 +197,7 @@ async function runMode(mode, packages) {
     await expect(session).toBeVisible({ timeout: 20000 }); await session.click();
     await expect(page.locator(`[data-conversation-session="${state.sessionId}"]`)).toBeVisible();
     await expect(page.locator('.ed-launch')).toHaveCount(7, { timeout: 15000 });
+    await expect(page.locator('style[data-dsh-plugin="dsh-everyday-shared"]')).toHaveCount(1);
     await expect(page.getByRole('button', { name: '打开快捷指令', exact: true })).toBeVisible();
     info.bootEntries = await page.evaluate(() => (window.__DSH_BOOT__?.entries ?? []).filter(entry => String(entry.id ?? entry.name).startsWith('dsh-')).map(entry => ({ id: entry.id, name: entry.name })));
     for (const item of packages) assert(info.bootEntries.some(entry => entry.id === item.name || entry.name === item.name), `Package ${item.name} missing from native boot graph`);

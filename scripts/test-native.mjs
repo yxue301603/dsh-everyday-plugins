@@ -1,9 +1,9 @@
 /** Actual DSH integration. Never uses the user's DSH profile or desktop windows. */
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, relative, isAbsolute, sep, extname } from 'node:path';
 import { chromium, expect } from '@playwright/test';
 
 const root = process.cwd();
@@ -14,20 +14,26 @@ const run = randomUUID().slice(0, 8);
 const dataHome = resolve(`.cache/native-home-${run}`), work = resolve(`.cache/native-work-${run}`);
 const patch = resolve(`.cache/native-overlay-${run}.yml`), key = randomUUID();
 const fixtureDir = resolve('.cache/native-fixture-package');
-const origin = 'http://127.0.0.1:43280';
+const port = Number(process.env.DSH_NATIVE_TEST_PORT ?? 43280);
+assert(Number.isInteger(port) && port >= 1024 && port <= 65535);
+const origin = `http://127.0.0.1:${port}`;
 const browserHost = process.env.DSH_TEST_BROWSER_HOST ?? 'localhost';
 assert(['127.0.0.1', 'localhost'].includes(browserHost), 'Browser host must remain loopback');
 const browserOrigin = origin.replace('127.0.0.1', browserHost);
 await mkdir(dataHome, { recursive: true }); await mkdir(work, { recursive: true }); await mkdir('artifacts', { recursive: true });
-await mkdir('docs/screenshots', { recursive: true });
+await mkdir('artifacts/native-screenshots', { recursive: true });
 await mkdir(fixtureDir, { recursive: true });
 await writeFile(resolve(fixtureDir, 'package.json'), JSON.stringify({ name: 'dsh-everyday-native-test-fixture', version: '0.0.0', type: 'module', main: './index.mjs' }));
 await writeFile(resolve(fixtureDir, 'index.mjs'), await readFile('tests/native/fixture.mjs'));
 await writeFile(patch, `- insert:\n    - id: dsh-everyday-plugins\n      name: ${JSON.stringify(resolve('index.js').replaceAll('\\', '/'))}\n    - id: everyday-native-test-fixture\n      name: ${JSON.stringify(resolve(fixtureDir, 'index.mjs').replaceAll('\\', '/'))}\n`);
 const result = { status: 'running', run, checks: {}, themes: [], layout: [], errors: [], consoleErrors: [], failedRequests: [], blockedDesktopActions: [], contrastFailures: [], layoutFailures: [], synthetic: true };
+const versionOutput = execFileSync(electron, ['--expose-internals', bin, '--version'], { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME: dataHome, DSH_AGENTS_HOME: resolve(`.cache/native-agents-${run}`) }, timeout: 20000 });
+result.runtimeVersion = versionOutput.match(/\b0\.2\.\d+(?:-[\w.]+)?\b/)?.[0];
+assert(result.runtimeVersion, 'Runtime must report its actual version');
+if (process.env.DSH_TEST_EXPECTED_VERSION) assert.equal(result.runtimeVersion, process.env.DSH_TEST_EXPECTED_VERSION);
 const delay = ms => new Promise(done => setTimeout(done, ms));
 let logs = '', exited = false, browser, page;
-const child = spawn(electron, ['--expose-internals', bin, '--profile', 'web', '--patch', patch, '--no-open', '--host', '127.0.0.1', '--port', '43280'], {
+const child = spawn(electron, ['--expose-internals', bin, '--profile', 'web', '--patch', patch, '--no-open', '--host', '127.0.0.1', '--port', String(port)], {
   cwd: work, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env,
     ELECTRON_RUN_AS_NODE: '1', DSH_HOME: dataHome, DSH_AGENTS_HOME: resolve(`.cache/native-agents-${run}`),
     DSH_EVERYDAY_FIXTURE_HOME: dataHome, DSH_EVERYDAY_FIXTURE_KEY: key, NO_COLOR: '1' },
@@ -35,7 +41,18 @@ const child = spawn(electron, ['--expose-internals', bin, '--profile', 'web', '-
 child.on('exit', () => { exited = true; }); child.on('error', error => { logs += String(error); exited = true; });
 child.stdout.on('data', chunk => { logs += chunk; }); child.stderr.on('data', chunk => { logs += chunk; });
 async function fixture(action = '', method = action ? 'POST' : 'GET') {
-  const response = await fetch(`${origin}/__everyday_native_fixture${action ? `/${action}` : ''}`, { method, headers: { 'x-dsh-fixture-key': key } });
+  const address = `${browserOrigin}/__everyday_native_fixture${action ? `/${action}` : ''}`;
+  // After startup, use the browser's same-origin connection. This avoids opening
+  // a second Node socket mid-run on Windows; it is still the actual Host route.
+  if (page && page.url().startsWith(browserOrigin)) {
+    const response = await page.evaluate(async ({ address, method, key }) => {
+      const response = await fetch(address, { method, headers: { 'x-dsh-fixture-key': key } });
+      return { ok: response.ok, value: await response.json() };
+    }, { address, method, key });
+    if (!response.ok) throw new Error(`Fixture ${action}: ${JSON.stringify(response.value)}`);
+    return response.value;
+  }
+  const response = await fetch(address, { method, headers: { 'x-dsh-fixture-key': key } });
   const value = await response.json();
   if (!response.ok) throw new Error(`Fixture ${action}: ${JSON.stringify(value)}`);
   return value;
@@ -112,6 +129,57 @@ async function inspectToolbar(width, theme = 'light') {
   await page.screenshot({ path: `artifacts/native-toolbar-${width}-${theme}.png`, fullPage: true });
   return toolbar;
 }
+async function readingMemoryRegression(sessionId) {
+  for (let index = 0; index < 20; index++) await fixture('append');
+  const state = await fixture();
+  const manual = state.identities.find(item => item.turn === 8);
+  const reading = state.identities.find(item => item.turn === 12);
+  assert(manual && reading, 'Synthetic reading turns are missing');
+  const mark = () => page.evaluate(id => JSON.parse(localStorage.getItem('dsh.everyday.outline.v1') ?? '{}')[id], sessionId);
+  let panel = await open('dsh-conversation-outline', '对话目录');
+  await panel.getByRole('textbox', { name: '搜索提问', exact: true }).fill('Additional native question 8');
+  const manualQuestion = panel.locator('.ed-list > button').filter({ hasText: /Additional native question 8\s*$/ });
+  await expect(manualQuestion).toHaveCount(1);
+  await manualQuestion.click(); await expect(panel).not.toBeVisible();
+  await expect.poll(async () => (await mark())?.seq).toBe(manual.userSeq);
+  const scope = page.locator(`[data-conversation-session="${sessionId}"]`);
+  const row = scope.locator('[data-chat-flow-kind="assistant-step"]').filter({ hasText: 'Additional native answer 12.' }).first();
+  await row.waitFor({ state: 'attached' });
+  // Programmatic setup aligns a known source row with the reader's viewport.
+  // It must not itself count as the user's reading action.
+  const anchor = await row.evaluate(async node => {
+    node.scrollIntoView({ block: 'center', behavior: 'auto' });
+    await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const port = node.closest('[data-conversation-scroll]');
+    if (!port) throw new Error('Native conversation scrollport missing');
+    const bounds = port.getBoundingClientRect(), rect = node.getBoundingClientRect();
+    const top = Math.max(0, bounds.top), bottom = Math.min(innerHeight, bounds.bottom);
+    const y = top + (bottom - top) * .45;
+    port.scrollTop += rect.top + rect.height * .5 - y;
+    await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+    return { x: bounds.left + bounds.width * .5, y, scrollTop: port.scrollTop, key: node.getAttribute('data-chat-node-key') };
+  });
+  await page.waitForTimeout(650);
+  assert.equal((await mark())?.seq, manual.userSeq, 'Programmatic positioning must not save a reading mark');
+  await page.mouse.move(anchor.x, anchor.y); await page.mouse.wheel(0, 1);
+  const port = scope.locator('[data-conversation-scroll]').first();
+  await expect.poll(() => port.evaluate(node => node.scrollTop)).not.toBe(anchor.scrollTop);
+  await expect.poll(async () => (await mark())?.seq, { timeout: 5000 }).toBe(reading.userSeq);
+  const saved = await mark();
+  assert.equal(saved.turn, reading.turn);
+  const expectedKey = await scope.locator('[data-chat-flow-kind="user"]').filter({ hasText: 'Additional native question 12' }).first().getAttribute('data-chat-node-key');
+  assert(expectedKey, 'Expected native question identity is missing');
+  assert.equal(saved.key, expectedKey, 'Reading memory must reference the native question, not its answer');
+  const later = scope.locator('[data-chat-flow-kind="assistant-step"]').filter({ hasText: 'Additional native answer 18.' }).first();
+  await later.evaluate(node => node.scrollIntoView({ block: 'center', behavior: 'auto' }));
+  await page.waitForTimeout(650);
+  assert.deepEqual(await mark(), saved, 'Later programmatic scroll must not overwrite the user reading position');
+  result.readingMemory = { fixtureTurns: state.turns, manualJumpSeq: manual.userSeq, programmaticSetupIgnored: true,
+    actualWheelDelta: 1, expectedUserSeq: reading.userSeq, expectedTurn: reading.turn, saved,
+    measuredAnchor: anchor.key, laterProgrammaticScrollIgnored: true };
+  result.checks.readingMemoryUserScroll = true;
+  await snapshot('reading-memory');
+}
 function measureContrast(element) {
   // Canvas resolves rgb(), color(srgb …), and modern color-mix() uniformly.
   const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
@@ -147,6 +215,25 @@ try {
     Object.defineProperty(window, 'Notification', { value: InertNotification, configurable: true });
   });
   page = await context.newPage();
+  if (process.env.DSH_NATIVE_STATIC_DIR) {
+    const staticDir = resolve(process.env.DSH_NATIVE_STATIC_DIR);
+    const frontend = JSON.parse(await readFile(resolve(staticDir, '..', 'package.json'), 'utf8'));
+    assert.equal(frontend.name, '@deepseek-ai/dsh-web-frontend');
+    assert.equal(frontend.version, result.runtimeVersion);
+    result.staticAssetTransport = { source: 'official installed frontend files', version: frontend.version, count: 0, hostApisAndWebSocket: 'live' };
+    await page.route('**/assets/**', async route => {
+      const url = new URL(route.request().url());
+      if (url.origin !== browserOrigin || !url.pathname.startsWith('/assets/')) return route.continue();
+      const file = resolve(staticDir, '.' + decodeURIComponent(url.pathname)), inside = relative(staticDir, file);
+      assert(inside && inside !== '..' && !inside.startsWith(`..${sep}`) && !isAbsolute(inside));
+      const contentType = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.wasm': 'application/wasm' }[extname(file)] ?? 'application/octet-stream';
+      let bytes;
+      try { bytes = await readFile(file); }
+      catch (error) { if (error.code === 'ENOENT') return route.continue(); throw error; }
+      result.staticAssetTransport.count++;
+      await route.fulfill({ body: bytes, contentType });
+    });
+  }
   page.on('pageerror', error => result.errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') result.consoleErrors.push({ text: message.text(), location: message.location() }); });
   page.on('requestfailed', request => result.failedRequests.push({ url: request.url().replace(/(token)=([^&]+)/g, '$1=[isolated-test-token]'), failure: request.failure() }));
@@ -156,13 +243,13 @@ try {
     result.blockedDesktopActions.push({ method: route.request().method(), url: route.request().url() });
     return route.abort('blockedbyclient');
   });
-  const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(/http:\/\/127\.0\.0\.1:43280[^\s]*/g) ?? [];
+  const urls = logs.replace(/\x1b\[[0-9;]*m/g, '').match(new RegExp(`http://127\\.0\\.0\\.1:${port}[^\\s]*`, 'g')) ?? [];
   await page.goto((urls.at(-1) ?? `${origin}/`).replace(origin, browserOrigin));
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(300);
     for (const name of ['继续', '稍后配置', 'Configure later']) {
       const control = page.getByRole('button', { name, exact: true });
-      if (await control.count() && await control.first().isVisible() && await control.first().isEnabled()) await control.first().click({ timeout: 1000 }).catch(() => {});
+      if (await control.count() && await control.first().isVisible()) await control.first().click({ timeout: 1000 }).catch(() => {});
     }
     const startup = page.getByRole('dialog', { name: '开始使用', exact: true });
     if (await startup.isVisible()) await startup.getByRole('button', { name: '关闭', exact: true }).click({ timeout: 1000 }).catch(() => {});
@@ -355,9 +442,39 @@ try {
     result.layout.push({ id: 'dsh-selection-actions', theme, viewport: 390, ...selectionBounds });
     await page.screenshot({ path: `artifacts/native-selection-narrow-${theme}.png`, fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await panel.screenshot({ path: `docs/screenshots/selection-${theme}.png` });
+    await panel.screenshot({ path: `artifacts/native-screenshots/selection-${theme}.png` });
     await page.screenshot({ path: `artifacts/native-dsh-selection-actions-${theme}.png`, fullPage: true }); await close('dsh-selection-actions');
   }
+  if (process.env.DSH_NATIVE_TEST_QUOTES === '1') {
+  // Latest DSH quote is created through its actual native Quote text action.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await setDraft('原生引用保留基线');
+  await page.waitForTimeout(1000);
+  await selectSentence(state.sessionId);
+  const nativeQuoteAction = page.getByRole('button', { name: '引用文本', exact: true });
+  await expect(nativeQuoteAction).toBeVisible({ timeout: 10000 });
+  await nativeQuoteAction.click();
+  const quoteNodes = page.locator('[data-composer-quote]');
+  await expect(quoteNodes).toHaveCount(1);
+  await expect(quoteNodes).toContainText('Native selection target');
+  const quotedDraft = await draft();
+  panel = await open('dsh-draft-history', '草稿历史');
+  await expect(panel.getByRole('button', { name: '替换当前文本…', exact: true })).toBeDisabled();
+  const selectedHistory = await panel.getByRole('textbox', { name: '历史版本预览', exact: true }).inputValue();
+  await panel.getByRole('button', { name: '插入当前草稿', exact: true }).click();
+  await expect(quoteNodes).toHaveCount(1); await expect(quoteNodes).toContainText('Native selection target');
+  assert((await draft()).includes('原生引用保留基线'));
+  assert((await draft()).length > quotedDraft.length);
+  await undoTo(quotedDraft);
+  await expect(quoteNodes).toHaveCount(1); await expect(quoteNodes).toContainText('Native selection target');
+  result.checks.nativeQuoteInsertionPreservationUndo = true;
+  result.nativeQuote = { createdViaOfficialUI: true, replacementDisabled: true, safeHistoryInsertion: true, undoPreservesQuote: true, selectedHistoryCharacters: selectedHistory.length };
+  await page.getByRole('button', { name: '移除引用', exact: true }).click();
+  await expect(quoteNodes).toHaveCount(0); await setDraft(quickBaseline);
+
+  }
+
+  await readingMemoryRegression(state.sessionId);
   const final = await fixture();
   if (final.attemptedModelCalls !== 0) throw new Error('A model call was attempted during native tests');
   result.checks.zeroModelCalls = true; result.checks.noSystemNotifications = await page.evaluate(() => window.__nativeNotificationAttempts === 0);
@@ -367,6 +484,7 @@ try {
   if (result.layoutFailures.length) throw new Error(`${result.layoutFailures.length} layouts overflow; see native-result.json`);
   if (result.errors.length) throw new Error(`${result.errors.length} native client errors; see native-result.json`);
   if (result.consoleErrors.length) throw new Error(`${result.consoleErrors.length} native console errors; see native-result.json`);
+  if (result.failedRequests.length) throw new Error(`${result.failedRequests.length} native failed requests; see native-result.json`);
   result.status = 'passed'; result.fixtureFinal = final;
   console.log(JSON.stringify({ status: result.status, checks: result.checks, errorCount: result.errors.length }));
 } catch (error) {
@@ -389,4 +507,5 @@ try {
   await writeFile('artifacts/native-result.json', JSON.stringify(result, null, 2));
   const manifest = JSON.parse(await readFile('package.json', 'utf8'));
   await writeFile(`artifacts/native-result-${manifest.version}.json`, JSON.stringify(result, null, 2));
+  await writeFile(`artifacts/native-${result.runtimeVersion}-result.json`, JSON.stringify(result, null, 2));
 }

@@ -4,17 +4,19 @@
 
 8 个 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 原生插件，按需装一个，也可以整套安装。中文 / English · 深浅主题 · 本地保存 · MIT。
 
-[English](README.en.md) · [八个插件与截图](docs/GALLERY.md) · [安装与升级](docs/INSTALLATION.md) · [下载固定版本](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.1) · [反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
+[English](README.en.md) · [八个插件与截图](docs/GALLERY.md) · [安装与升级](docs/INSTALLATION.md) · [下载固定版本](https://github.com/yxue301603/dsh-everyday-plugins/releases/tag/v0.1.2) · [反馈](https://github.com/yxue301603/dsh-everyday-plugins/issues/new/choose)
 
 [![Checks](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml/badge.svg)](https://github.com/yxue301603/dsh-everyday-plugins/actions/workflows/checks.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-315fbe)](LICENSE)
-[![DSH tested](https://img.shields.io/badge/DSH%20tested-0.2.1--rc.2-315fbe)](docs/VERIFICATION.md)
+[![DSH tested](https://img.shields.io/badge/DSH%20tested-0.2.2--alpha.2-315fbe)](docs/VERIFICATION.md)
 
 ## 先看它能帮你什么
 
 ![草稿找回、回答收藏、对话定位的实际插件演示](https://raw.githubusercontent.com/yxue301603/dsh-everyday-plugins/main/docs/media/everyday-demo-dark.gif)
 
 13 秒演示：草稿历史 → 带标签的回答收藏 → 搜索提问。使用实际插件组件、隔离测试宿主和合成内容。[静态版与全部截图](docs/GALLERY.md) · [素材来源](docs/media/README.md)。
+
+本版修复长对话滚动与输入卡顿；[性能复现与结果](docs/PERFORMANCE.md)。
 
 ## 安装
 
@@ -24,7 +26,7 @@
 https://github.com/yxue301603/dsh-everyday-plugins
 ```
 
-仓库提供预构建客户端，**不用自行编译，也不需要额外的 API Key**。已在 DSH **0.2.1-rc.2** 验证；声明范围为 0.2.x，其他版本以实际验证为准。
+仓库提供预构建客户端，**不用自行编译，也不需要额外的 API Key**。已验证 DSH **0.2.1-rc.3、rc.4、0.2.2-alpha.2**；alpha.2 是预览版，具体范围见[验证说明](docs/VERIFICATION.md)。
 
 已经装了独立快捷指令？可以保留它，按需添加其他功能。**同一个功能只安装一份**，整套与重复的独立包二选一。完整子目录地址、固定版本、桌面/Web 区别和升级步骤见 [安装指南](docs/INSTALLATION.md)。
 

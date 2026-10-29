@@ -1,4 +1,4 @@
-/* dsh-draft-history v0.1.1 · MIT */
+/* dsh-draft-history v0.1.2 · MIT */
 window.__ModuleLoader__.load({id:"dsh-draft-history",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -141,14 +141,28 @@ function registerTool(ctx, spec) {
       if (event.target !== dialog.current) return;
       const rect = event.target.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
-    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current })))));
+    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current, composerElement: trigger.current?.closest("[data-composer-card]") })))));
   }
   ctx.effect(() => {
-    const node = document.createElement("style");
-    node.dataset.dshPlugin = id;
-    node.textContent = styles_default;
-    document.head.append(node);
-    return () => node.remove();
+    const key = /* @__PURE__ */ Symbol.for("dsh.everyday.styles");
+    const registry = document[key] ??= /* @__PURE__ */ new Map();
+    let entry = registry.get(styles_default);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement("style");
+      node.dataset.dshPlugin = "dsh-everyday-shared";
+      node.textContent = styles_default;
+      document.head.append(node);
+      entry = { node, users: 0 };
+      registry.set(styles_default, entry);
+    }
+    entry.users++;
+    return () => {
+      if (--entry.users === 0) {
+        entry.node.remove();
+        registry.delete(styles_default);
+        if (!registry.size) delete document[key];
+      }
+    };
   }, `${id}: shared styles`);
   ctx.slots.inject("conversation.input.left", () => ctx.slots.register({ name: "conversation.input.left", id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith("zh") ? 0 : 1] }, Launcher));
 }
@@ -157,14 +171,18 @@ function registerTool(ctx, spec) {
 function createStore(key, initial2, validate = (data) => data) {
   const listeners = /* @__PURE__ */ new Set();
   let disposed = false;
+  let cachedRaw, cachedRead;
   const fresh = () => typeof initial2 === "function" ? initial2() : structuredClone(initial2);
   function read() {
     try {
       const raw = localStorage.getItem(key);
+      if (cachedRead && raw === cachedRaw) return cachedRead;
       if (raw !== null && raw.length > 2e6) throw new Error("Document too large");
       const data = validate(raw === null ? fresh() : JSON.parse(raw));
       if (!data || typeof data !== "object") throw new Error("Invalid document");
-      return { data, error: "" };
+      cachedRaw = raw;
+      cachedRead = { data, error: "" };
+      return cachedRead;
     } catch {
       return { data: fresh(), error: "无法读取本地数据 / Cannot read local data. Export or back up the original before resetting." };
     }
@@ -175,8 +193,11 @@ function createStore(key, initial2, validate = (data) => data) {
   };
   const onStorage = (event) => {
     if (event.key === key || event.key === null) {
-      snapshot = read();
-      emit();
+      const next = read();
+      if (next !== snapshot) {
+        snapshot = next;
+        emit();
+      }
     }
   };
   window.addEventListener("storage", onStorage);
@@ -199,8 +220,17 @@ function createStore(key, initial2, validate = (data) => data) {
         const next = validate(typeof change === "function" ? change(structuredClone(latest.data)) : change);
         const json = JSON.stringify(next);
         if (!next || typeof next !== "object" || json.length > 2e6) throw new Error("本地记录已达上限 / Local storage limit reached");
+        if (json === cachedRaw) {
+          if (snapshot !== latest) {
+            snapshot = latest;
+            emit();
+          }
+          return snapshot.data;
+        }
         localStorage.setItem(key, json);
         snapshot = { data: JSON.parse(json), error: "" };
+        cachedRaw = json;
+        cachedRead = snapshot;
         emit();
         return snapshot.data;
       } catch (error) {
@@ -211,9 +241,11 @@ function createStore(key, initial2, validate = (data) => data) {
     },
     raw: () => localStorage.getItem(key) ?? "",
     reset() {
-      const next = validate(fresh());
-      localStorage.setItem(key, JSON.stringify(next));
-      snapshot = { data: next, error: "" };
+      const next = validate(fresh()), raw = JSON.stringify(next);
+      localStorage.setItem(key, raw);
+      snapshot = { data: JSON.parse(raw), error: "" };
+      cachedRaw = raw;
+      cachedRead = snapshot;
       emit();
     },
     dispose() {
@@ -259,8 +291,68 @@ function entriesFor(data, id, now = Date.now()) {
   const session = data.sessions.find((item) => item.id === id && item.updated >= now - LIMITS.age);
   return session?.entries.filter((entry) => entry.at >= now - LIMITS.age) ?? [];
 }
-function replacementAllowed(input) {
-  return input?.phase === "plain" && !input.claim && (input.draft?.length ?? 0) <= LIMITS.text && !input.occurrences?.length && !input.attachmentIds?.length;
+function replacementAllowed(input, hasSemanticQuote = false) {
+  return !hasSemanticQuote && input?.phase === "plain" && !input.claim && (input.draft?.length ?? 0) <= LIMITS.text && !input.occurrences?.length && !input.attachmentIds?.length;
+}
+
+// src/recorder.js
+function createDraftRecorder(persist, scheduling = {}) {
+  const later = scheduling.later ?? ((fn, delay) => setTimeout(fn, delay));
+  const cancelLater = scheduling.cancelLater ?? ((handle) => clearTimeout(handle));
+  const idle = scheduling.idle ?? ((fn) => typeof globalThis.requestIdleCallback === "function" ? { native: true, handle: globalThis.requestIdleCallback(fn, { timeout: 1500 }) } : { native: false, handle: setTimeout(fn, 0) });
+  const cancelIdle = scheduling.cancelIdle ?? ((token) => {
+    if (token.native) globalThis.cancelIdleCallback?.(token.handle);
+    else clearTimeout(token.handle);
+  });
+  let latest = null, saved = null, timer = null, job = null, generation = 0, disposed = false;
+  function cancel() {
+    generation += 1;
+    if (timer !== null) cancelLater(timer);
+    if (job !== null) cancelIdle(job);
+    timer = null;
+    job = null;
+  }
+  function write(value) {
+    if (!value?.enabled || !value.text.trim()) return;
+    if (saved?.sessionId === value.sessionId && saved.text === value.text) return;
+    try {
+      if (persist(value.sessionId, value.text) !== false) saved = { sessionId: value.sessionId, text: value.text };
+    } catch {
+    }
+  }
+  return {
+    observe(sessionId, text, enabled = true) {
+      if (disposed) return;
+      text = typeof text === "string" ? text : "";
+      if (latest?.sessionId === sessionId && latest.text === text && latest.enabled === enabled) return;
+      cancel();
+      if (latest && (latest.sessionId !== sessionId || !text.trim())) write(latest);
+      latest = { sessionId, text, enabled };
+      if (!enabled || !text.trim()) return;
+      const ticket = generation;
+      timer = later(() => {
+        timer = null;
+        if (ticket !== generation || disposed) return;
+        job = idle(() => {
+          job = null;
+          if (ticket === generation && !disposed) write(latest);
+        });
+      }, 900);
+    },
+    flush() {
+      if (!disposed) {
+        cancel();
+        write(latest);
+      }
+    },
+    dispose() {
+      if (!disposed) {
+        cancel();
+        write(latest);
+        disposed = true;
+      }
+    }
+  };
 }
 
 // src/client.jsx
@@ -269,56 +361,50 @@ var inject = ["slots", "locale", "sessions"];
 function apply(ctx) {
   const store = createStore("dsh.everyday.draft-history.v1", initial, normalize);
   const ignored = /* @__PURE__ */ new Map();
+  const recorders = /* @__PURE__ */ new Set();
   const save = (sessionId, text, force = false) => {
-    if (!force && ignored.get(sessionId) === text) return;
+    if (!force && ignored.get(sessionId) === text) return false;
     if (ignored.get(sessionId) !== text || force) ignored.delete(sessionId);
     const snapshot = store.getSnapshot().data;
-    if (!snapshot.enabled && !force || !text?.trim() || text.length > LIMITS.text) return;
-    if (entriesFor(snapshot, sessionId)[0]?.text === text) return;
+    if (!snapshot.enabled && !force || !text?.trim() || text.length > LIMITS.text) return false;
+    if (entriesFor(snapshot, sessionId)[0]?.text === text) {
+      if (store.getSnapshot().error) store.update((value) => value);
+      return true;
+    }
     store.update((before) => {
       const source = force && !before.enabled ? { ...before, enabled: true } : before;
       return { ...remember(source, sessionId, text), enabled: before.enabled };
     });
+    return true;
   };
   function Observer({ sessionId, useInput }) {
-    const input = useInput((state) => state);
-    const latest = (0, import_react2.useRef)({ sessionId, text: input.draft ?? "" });
-    const pending = (0, import_react2.useRef)(null);
-    const { data } = useExternalStore(store);
-    const persist = (id, text) => {
-      try {
-        save(id, text);
-      } catch {
-      }
-    };
+    const text = useInput((state) => state.draft ?? "");
+    const enabled = (0, import_react2.useSyncExternalStore)(store.subscribe, () => store.getSnapshot().data.enabled);
+    const recorder = (0, import_react2.useRef)(null);
     (0, import_react2.useEffect)(() => {
-      clearTimeout(pending.current);
-      const text = input.draft ?? "";
-      const previous = latest.current;
-      if ((previous.sessionId !== sessionId || !text) && previous.text) persist(previous.sessionId, previous.text);
-      latest.current = { sessionId, text };
-      if (data.enabled && text.trim()) pending.current = setTimeout(() => persist(sessionId, text), 900);
-      return () => clearTimeout(pending.current);
-    }, [sessionId, input.draft, data.enabled]);
-    (0, import_react2.useEffect)(() => {
-      const flush = () => {
-        const value = latest.current;
-        persist(value.sessionId, value.text);
-      };
+      const current = createDraftRecorder(save);
+      recorder.current = current;
+      recorders.add(current);
+      const flush = () => current.flush();
       window.addEventListener("pagehide", flush);
       return () => {
-        clearTimeout(pending.current);
-        flush();
+        current.dispose();
+        recorders.delete(current);
         window.removeEventListener("pagehide", flush);
       };
     }, []);
+    (0, import_react2.useEffect)(() => {
+      recorder.current.observe(sessionId, text, enabled);
+    }, [sessionId, text, enabled]);
     return null;
   }
-  function Panel({ sessionId, useInput, inputActions, close }) {
+  function Panel({ sessionId, useInput, inputActions, close, composerElement }) {
     const t = useLocale(ctx);
     const input = useInput((state) => state);
     const live = (0, import_react2.useRef)(input);
     live.current = input;
+    const hasQuote = () => !composerElement || !!composerElement.querySelector("[data-composer-quote]");
+    const canReplace = replacementAllowed(input, hasQuote());
     const { data, error } = useExternalStore(store);
     const [query, setQuery] = (0, import_react2.useState)("");
     const [selectedId, setSelectedId] = (0, import_react2.useState)("");
@@ -341,7 +427,7 @@ function apply(ctx) {
     const restore = (replace = false) => run(() => {
       if (!selected || !inputActions) throw new Error(t("当前输入框不可用。", "The current composer is unavailable."));
       const current = live.current;
-      if (replace && !replacementAllowed(current)) throw new Error(t("当前含附件、引用或正在发送，请使用插入。", "Use Insert while attachments, references or a submission are present."));
+      if (replace && !replacementAllowed(current, hasQuote())) throw new Error(t("当前含附件、引用或正在发送，请使用插入。", "Use Insert while attachments, references or a submission are present."));
       save(sessionId, current.draft ?? "", true);
       if (replace) {
         const captured = inputActions.captureInsertion();
@@ -365,10 +451,10 @@ function apply(ctx) {
     } }), !selected ? /* @__PURE__ */ import_react2.default.createElement(Empty, null, t("还没有草稿版本。输入文字并停顿片刻即可保存。", "No versions yet. Type in the composer and pause briefly to save.")) : /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row", style: { flexWrap: "wrap" } }, entries.map((entry) => /* @__PURE__ */ import_react2.default.createElement(Button, { key: entry.id, primary: entry.id === selected.id, onClick: () => {
       setSelectedId(entry.id);
       setConfirm("");
-    } }, date(entry.at)))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row" }, /* @__PURE__ */ import_react2.default.createElement("strong", null, date(selected.at)), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t(`${selected.text.length} 字符`, `${selected.text.length} characters`))), /* @__PURE__ */ import_react2.default.createElement("textarea", { className: "ed-input", rows: 9, value: selected.text, readOnly: true, "aria-label": t("历史版本预览", "History preview") }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ import_react2.default.createElement(Button, { primary: true, onClick: () => restore() }, t("插入当前草稿", "Insert into draft")), /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: !replacementAllowed(input), onClick: () => setConfirm("replace") }, t("替换当前文本…", "Replace current text…")), /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: () => run(async () => {
+    } }, date(entry.at)))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row" }, /* @__PURE__ */ import_react2.default.createElement("strong", null, date(selected.at)), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ed-muted" }, t(`${selected.text.length} 字符`, `${selected.text.length} characters`))), /* @__PURE__ */ import_react2.default.createElement("textarea", { className: "ed-input", rows: 9, value: selected.text, readOnly: true, "aria-label": t("历史版本预览", "History preview") }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row", style: { flexWrap: "wrap" } }, /* @__PURE__ */ import_react2.default.createElement(Button, { primary: true, onClick: () => restore() }, t("插入当前草稿", "Insert into draft")), /* @__PURE__ */ import_react2.default.createElement(Button, { disabled: !canReplace, onClick: () => setConfirm("replace") }, t("替换当前文本…", "Replace current text…")), /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: () => run(async () => {
       await navigator.clipboard.writeText(selected.text);
       setNotice(t("已复制。", "Copied."));
-    }) }, t("复制", "Copy")), /* @__PURE__ */ import_react2.default.createElement(Button, { danger: true, onClick: () => setConfirm("delete") }, t("删除此版本…", "Delete version…"))), !replacementAllowed(input) && /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("含附件、引用或正在发送时不提供整段替换；插入会保留原有内容。", "Full replacement is disabled while attachments, references or submission are present. Insert preserves existing content."))), confirm && /* @__PURE__ */ import_react2.default.createElement(Notice, null, /* @__PURE__ */ import_react2.default.createElement("p", null, confirm === "replace" ? t("将用所选历史替换当前纯文本；当前非空文本会先备份。确认后不会发送。", "Replace the current plain text with this version? Nonempty current text is backed up first. Nothing is sent.") : confirm === "delete" ? t("删除选中的历史版本？", "Delete the selected version?") : t("清除本会话的全部草稿历史？当前输入框不受影响。", "Clear all history for this conversation? The composer is unchanged.")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row" }, /* @__PURE__ */ import_react2.default.createElement(Button, { danger: true, onClick: () => {
+    }) }, t("复制", "Copy")), /* @__PURE__ */ import_react2.default.createElement(Button, { danger: true, onClick: () => setConfirm("delete") }, t("删除此版本…", "Delete version…"))), !canReplace && /* @__PURE__ */ import_react2.default.createElement("p", { className: "ed-muted" }, t("含附件、引用或正在发送时不提供整段替换；插入会保留原有内容。", "Full replacement is disabled while attachments, references or submission are present. Insert preserves existing content."))), confirm && /* @__PURE__ */ import_react2.default.createElement(Notice, null, /* @__PURE__ */ import_react2.default.createElement("p", null, confirm === "replace" ? t("将用所选历史替换当前纯文本；当前非空文本会先备份。确认后不会发送。", "Replace the current plain text with this version? Nonempty current text is backed up first. Nothing is sent.") : confirm === "delete" ? t("删除选中的历史版本？", "Delete the selected version?") : t("清除本会话的全部草稿历史？当前输入框不受影响。", "Clear all history for this conversation? The composer is unchanged.")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ed-row" }, /* @__PURE__ */ import_react2.default.createElement(Button, { danger: true, onClick: () => {
       if (confirm === "replace") restore(true);
       else run(() => {
         store.update((value) => ({ ...value, sessions: value.sessions.map((session) => session.id !== sessionId ? session : { ...session, entries: confirm === "clear" ? [] : session.entries.filter((entry) => entry.id !== selected?.id) }) }));
@@ -379,6 +465,8 @@ function apply(ctx) {
   }
   const cleanup = registerTool(ctx, { id: name, title: ["草稿历史", "Draft history"], shortTitle: ["草稿", "Drafts"], icon: "↶", order: 30, Panel, Observer });
   ctx.on("dispose", () => {
+    for (const recorder of recorders) recorder.dispose();
+    recorders.clear();
     cleanup?.();
     store.dispose();
   });

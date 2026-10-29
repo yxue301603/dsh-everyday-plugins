@@ -1,4 +1,4 @@
-/* dsh-task-alerts v0.1.1 · MIT */
+/* dsh-task-alerts v0.1.2 · MIT */
 window.__ModuleLoader__.load({id:"dsh-task-alerts",factory(require){const module={exports:{}};const exports=module.exports;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -127,14 +127,28 @@ function registerTool(ctx, spec) {
       if (event.target !== dialog.current) return;
       const rect = event.target.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
-    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current })))));
+    } }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-mark", "aria-hidden": "true" }, icon), /* @__PURE__ */ import_react.default.createElement("div", null, /* @__PURE__ */ import_react.default.createElement("h2", null, t(...title)), /* @__PURE__ */ import_react.default.createElement("span", { className: "ed-caption" }, t("DSH 日常工具 · 本地保存", "DSH Everyday · Local tools"))), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ed-close", "aria-label": t("关闭", "Close"), onClick: close }, "×")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ed-panel" }, /* @__PURE__ */ import_react.default.createElement(Boundary, null, /* @__PURE__ */ import_react.default.createElement(Panel, { ...props, ctx, close, openPanel, insertionSpan: captured.current, composerElement: trigger.current?.closest("[data-composer-card]") })))));
   }
   ctx.effect(() => {
-    const node = document.createElement("style");
-    node.dataset.dshPlugin = id;
-    node.textContent = styles_default;
-    document.head.append(node);
-    return () => node.remove();
+    const key = /* @__PURE__ */ Symbol.for("dsh.everyday.styles");
+    const registry = document[key] ??= /* @__PURE__ */ new Map();
+    let entry = registry.get(styles_default);
+    if (!entry?.node.isConnected) {
+      const node = document.createElement("style");
+      node.dataset.dshPlugin = "dsh-everyday-shared";
+      node.textContent = styles_default;
+      document.head.append(node);
+      entry = { node, users: 0 };
+      registry.set(styles_default, entry);
+    }
+    entry.users++;
+    return () => {
+      if (--entry.users === 0) {
+        entry.node.remove();
+        registry.delete(styles_default);
+        if (!registry.size) delete document[key];
+      }
+    };
   }, `${id}: shared styles`);
   ctx.slots.inject("conversation.input.left", () => ctx.slots.register({ name: "conversation.input.left", id, order, label: () => title[String(ctx.locale.getSnapshot().active).startsWith("zh") ? 0 : 1] }, Launcher));
 }
@@ -143,14 +157,18 @@ function registerTool(ctx, spec) {
 function createStore(key, initial, validate = (data) => data) {
   const listeners = /* @__PURE__ */ new Set();
   let disposed = false;
+  let cachedRaw, cachedRead;
   const fresh = () => typeof initial === "function" ? initial() : structuredClone(initial);
   function read() {
     try {
       const raw = localStorage.getItem(key);
+      if (cachedRead && raw === cachedRaw) return cachedRead;
       if (raw !== null && raw.length > 2e6) throw new Error("Document too large");
       const data = validate(raw === null ? fresh() : JSON.parse(raw));
       if (!data || typeof data !== "object") throw new Error("Invalid document");
-      return { data, error: "" };
+      cachedRaw = raw;
+      cachedRead = { data, error: "" };
+      return cachedRead;
     } catch {
       return { data: fresh(), error: "无法读取本地数据 / Cannot read local data. Export or back up the original before resetting." };
     }
@@ -161,8 +179,11 @@ function createStore(key, initial, validate = (data) => data) {
   };
   const onStorage = (event) => {
     if (event.key === key || event.key === null) {
-      snapshot = read();
-      emit();
+      const next = read();
+      if (next !== snapshot) {
+        snapshot = next;
+        emit();
+      }
     }
   };
   window.addEventListener("storage", onStorage);
@@ -185,8 +206,17 @@ function createStore(key, initial, validate = (data) => data) {
         const next = validate(typeof change === "function" ? change(structuredClone(latest.data)) : change);
         const json = JSON.stringify(next);
         if (!next || typeof next !== "object" || json.length > 2e6) throw new Error("本地记录已达上限 / Local storage limit reached");
+        if (json === cachedRaw) {
+          if (snapshot !== latest) {
+            snapshot = latest;
+            emit();
+          }
+          return snapshot.data;
+        }
         localStorage.setItem(key, json);
         snapshot = { data: JSON.parse(json), error: "" };
+        cachedRaw = json;
+        cachedRead = snapshot;
         emit();
         return snapshot.data;
       } catch (error) {
@@ -197,9 +227,11 @@ function createStore(key, initial, validate = (data) => data) {
     },
     raw: () => localStorage.getItem(key) ?? "",
     reset() {
-      const next = validate(fresh());
-      localStorage.setItem(key, JSON.stringify(next));
-      snapshot = { data: next, error: "" };
+      const next = validate(fresh()), raw = JSON.stringify(next);
+      localStorage.setItem(key, raw);
+      snapshot = { data: JSON.parse(raw), error: "" };
+      cachedRaw = raw;
+      cachedRead = snapshot;
       emit();
     },
     dispose() {
@@ -226,12 +258,51 @@ function endingKind(reason) {
   if (["error", "interrupted", "max-tokens"].includes(reason?.kind)) return "failed";
   return "stopped";
 }
-function liveEnds(snapshot, since, watermark) {
-  if (snapshot.change?.kind !== "append") return [];
-  return (snapshot.change.entries ?? []).map((entry) => entry.event ?? entry).filter((event) => event.type === "turn/end" && event.time >= since && event.seq > watermark);
-}
 function shouldNotify(settings, permission, visible, focused) {
   return settings.enabled && settings.system && permission === "granted" && (settings.foreground || !(visible && focused));
+}
+function createAlertEventCursor(initial, since) {
+  const empty = Object.freeze([]);
+  let watermark = 0, turn = null, revision;
+  function baseline(change) {
+    const entries = change?.entries ?? (change?.entry ? [change.entry] : []);
+    let foundSeq = false, foundTurn = false;
+    for (let index = entries.length - 1; index >= 0 && (!foundSeq || !foundTurn); index--) {
+      const event = entries[index].event ?? entries[index];
+      if (!foundSeq && Number.isFinite(event.seq)) {
+        watermark = Math.max(watermark, event.seq);
+        foundSeq = true;
+      }
+      if (!foundTurn && Number.isSafeInteger(event.data?.turn)) {
+        turn = Math.max(turn ?? 0, event.data.turn);
+        foundTurn = true;
+      }
+    }
+  }
+  baseline(initial?.change);
+  revision = initial?.revision;
+  return {
+    get turn() {
+      return turn;
+    },
+    advance(snapshot) {
+      if (typeof snapshot.revision === "number" && snapshot.revision === revision) return empty;
+      revision = snapshot.revision;
+      const change = snapshot.change;
+      if (change?.kind !== "append") {
+        baseline(change);
+        return empty;
+      }
+      let ends;
+      for (const entry of change.entries ?? []) {
+        const event = entry.event ?? entry;
+        if (event.type === "turn/end" && event.time >= since && event.seq > watermark) (ends ??= []).push(event);
+        if (Number.isFinite(event.seq)) watermark = Math.max(watermark, event.seq);
+        if (Number.isSafeInteger(event.data?.turn)) turn = Math.max(turn ?? 0, event.data.turn);
+      }
+      return ends ?? empty;
+    }
+  };
 }
 
 // src/client.jsx
@@ -247,6 +318,7 @@ function apply(ctx) {
   const timers = /* @__PURE__ */ new Map();
   const lastEnd = /* @__PURE__ */ new Map();
   const notifications = /* @__PURE__ */ new Set();
+  let previousCatalog = null, previousPending = null;
   const word = (zh, en) => /^zh/i.test(String(ctx.locale.getSnapshot()?.active)) ? zh : en;
   const label = (kind) => kind === "completed" ? word("任务已完成", "Task completed") : kind === "pending" ? word("等待你的确认", "Your confirmation is needed") : kind === "failed" ? word("任务未能完成", "Task failed") : kind === "ended" ? word("任务已结束，请查看结果", "Task ended; review the result") : word("任务已停止", "Task stopped");
   function publish(sessionId, kind, key, detail = "") {
@@ -276,43 +348,44 @@ function apply(ctx) {
     }
   }
   function observeEvents(sessionId, binding) {
-    let watermark = binding.eventSource.getSnapshot().entries.reduce((max, entry) => Math.max(max, (entry.event ?? entry).seq ?? 0), 0);
-    return binding.eventSource.subscribe(() => {
+    const cursor = createAlertEventCursor(binding.eventSource.getSnapshot(), started);
+    const dispose = binding.eventSource.subscribe(() => {
       const snapshot = binding.eventSource.getSnapshot();
-      const ends = liveEnds(snapshot, started, watermark);
-      const entries = snapshot.change?.entries ?? [];
-      for (const entry of entries) watermark = Math.max(watermark, (entry.event ?? entry).seq ?? 0);
-      for (const event of ends) {
+      for (const event of cursor.advance(snapshot)) {
         lastEnd.set(sessionId, { time: event.time, seq: event.seq, turn: event.data.turn });
         clearTimeout(timers.get(sessionId));
         timers.delete(sessionId);
         publish(sessionId, endingKind(event.data.reason), `turn:${event.data.turn}`, event.data.reason?.kind === "error" ? String(event.data.reason.error?.message ?? "").slice(0, 300) : "");
       }
     });
+    return { cursor, dispose };
   }
   function reconcile(initial = false) {
     const list = ctx.sessions.list.getSnapshot();
+    const beforeCatalog = previousCatalog;
+    if (list.byId === beforeCatalog) return;
+    previousCatalog = list.byId;
     for (const [sessionId, summary] of Object.entries(list.byId ?? {})) {
+      if (beforeCatalog?.[sessionId] === summary && running.has(sessionId) && !subscriptions.has(sessionId)) continue;
       const before = running.get(sessionId);
       const next = summary.running === true;
       if (next && !before?.value) lastEnd.delete(sessionId);
-      running.set(sessionId, { value: next, since: next && !before?.value ? Date.now() : before?.since ?? started });
+      if (!before || before.value !== next) running.set(sessionId, { value: next, since: next ? Date.now() : before?.since ?? started });
       if (!initial && before?.value && !next) {
         clearTimeout(timers.get(sessionId));
         timers.set(sessionId, setTimeout(() => {
           timers.delete(sessionId);
           const end = lastEnd.get(sessionId);
           if (running.get(sessionId)?.value || end && end.time >= before.since) return;
-          const entries = ctx.sessions.binding(sessionId)?.eventSource.getSnapshot().entries ?? [];
-          const latestStart = entries.map((entry) => entry.event ?? entry).findLast((event) => event.type === "turn/start");
-          publish(sessionId, "ended", latestStart ? `turn:${latestStart.data.turn}` : `status:${summary.updatedAt ?? before.since}`);
+          const turn = subscriptions.get(sessionId)?.cursor.turn;
+          publish(sessionId, "ended", turn ? `turn:${turn}` : `status:${summary.updatedAt ?? before.since}`);
         }, 800));
       }
       const binding = ctx.sessions.binding(sessionId);
       const existing = subscriptions.get(sessionId);
       if (binding && existing?.binding !== binding) {
         existing?.dispose();
-        subscriptions.set(sessionId, { binding, dispose: observeEvents(sessionId, binding) });
+        subscriptions.set(sessionId, { binding, ...observeEvents(sessionId, binding) });
       } else if (!binding && existing) {
         existing.dispose();
         subscriptions.delete(sessionId);
@@ -331,7 +404,8 @@ function apply(ctx) {
   const status = ctx.get?.("uiSession")?.sessionStatus;
   function observePending(initial = false) {
     const snapshot = status?.getSnapshot();
-    if (!(snapshot instanceof Map)) return;
+    if (!(snapshot instanceof Map) || snapshot === previousPending) return;
+    previousPending = snapshot;
     for (const [sessionId, value] of snapshot) {
       const key = value.pendingInteraction?.key;
       const previous = pending.get(sessionId);

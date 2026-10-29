@@ -1,6 +1,6 @@
 {
   "name": "dsh-selection-actions",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：选中回答后引用追问、解释或翻译，预览后填入草稿。",
   "license": "MIT",

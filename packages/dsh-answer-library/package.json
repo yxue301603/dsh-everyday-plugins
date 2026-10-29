@@ -1,6 +1,6 @@
 {
   "name": "dsh-answer-library",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "DeepSeek Harness 原生插件：保存回答与摘录，按标签检索，复制或插入草稿。",
   "license": "MIT",

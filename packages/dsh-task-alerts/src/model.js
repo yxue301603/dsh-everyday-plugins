@@ -18,3 +18,37 @@ export function liveEnds(snapshot, since, watermark) {
 export function shouldNotify(settings, permission, visible, focused) {
   return settings.enabled && settings.system && permission === 'granted' && (settings.foreground || !(visible && focused));
 }
+
+/** Consume native deltas without materializing the complete (potentially very long) event window. */
+export function createAlertEventCursor(initial, since) {
+  const empty = Object.freeze([]);
+  let watermark = 0, turn = null, revision;
+  function baseline(change) {
+    const entries = change?.entries ?? (change?.entry ? [change.entry] : []);
+    let foundSeq = false, foundTurn = false;
+    for (let index = entries.length - 1; index >= 0 && (!foundSeq || !foundTurn); index--) {
+      const event = entries[index].event ?? entries[index];
+      if (!foundSeq && Number.isFinite(event.seq)) { watermark = Math.max(watermark, event.seq); foundSeq = true; }
+      if (!foundTurn && Number.isSafeInteger(event.data?.turn)) { turn = Math.max(turn ?? 0, event.data.turn); foundTurn = true; }
+    }
+  }
+  baseline(initial?.change);
+  revision = initial?.revision;
+  return {
+    get turn() { return turn; },
+    advance(snapshot) {
+      if (typeof snapshot.revision === 'number' && snapshot.revision === revision) return empty;
+      revision = snapshot.revision;
+      const change = snapshot.change;
+      if (change?.kind !== 'append') { baseline(change); return empty; }
+      let ends;
+      for (const entry of change.entries ?? []) {
+        const event = entry.event ?? entry;
+        if (event.type === 'turn/end' && event.time >= since && event.seq > watermark) (ends ??= []).push(event);
+        if (Number.isFinite(event.seq)) watermark = Math.max(watermark, event.seq);
+        if (Number.isSafeInteger(event.data?.turn)) turn = Math.max(turn ?? 0, event.data.turn);
+      }
+      return ends ?? empty;
+    },
+  };
+}

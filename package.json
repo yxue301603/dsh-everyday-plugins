@@ -1,6 +1,6 @@
 {
   "name": "dsh-everyday-plugins",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "CHANGELOG.md",
     "docs/INSTALLATION.md",
     "docs/VERIFICATION.md",
+    "docs/PERFORMANCE.md",
     "docs/FEEDBACK.md",
     "docs/screenshots",
     "LICENSE"
@@ -55,7 +56,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs packages/*/src/*.test.js",
     "test:browser": "playwright test",
-    "check": "npm run build && npm test && npm run test:browser",
+    "test:performance": "node scripts/test-performance.mjs",
+    "check": "npm run build && npm test && npm run test:browser && npm run test:performance",
     "pack": "node scripts/pack.mjs"
   },
   "devDependencies": {
